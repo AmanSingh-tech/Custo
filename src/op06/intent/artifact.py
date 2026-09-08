@@ -30,7 +30,9 @@ class SklearnIntentClassifier:
             ordered = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
             label, confidence = ordered[0]
             second = ordered[1][1] if len(ordered) > 1 else 0.0
-            predictions.append(IntentPrediction(label, confidence, scores, max(0.0, confidence - second)))
+            predictions.append(
+                IntentPrediction(label, confidence, scores, max(0.0, confidence - second))
+            )
         return predictions
 
 

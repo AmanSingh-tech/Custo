@@ -54,14 +54,20 @@ def audit_examples(examples: list[dict[str, Any]]) -> dict[str, Any]:
         intent = example.get("intent")
         action = example.get("action", example.get("next_action"))
         turns = example.get("conversation", example.get("turns"))
-        if not isinstance(intent, str) or not isinstance(action, str) or not isinstance(turns, list):
+        if (
+            not isinstance(intent, str)
+            or not isinstance(action, str)
+            or not isinstance(turns, list)
+        ):
             malformed += 1
             continue
         intent_counts[intent] += 1
         action_counts[action] += 1
         conversation_counts[canonical_conversation_id(example, index)] += 1
         turn_counts[len(turns)] += 1
-    serialized = "\n".join(json.dumps(item, sort_keys=True, ensure_ascii=False) for item in examples)
+    serialized = "\n".join(
+        json.dumps(item, sort_keys=True, ensure_ascii=False) for item in examples
+    )
     return {
         "rows": len(examples),
         "valid_rows": len(examples) - malformed,
@@ -97,7 +103,9 @@ def split_examples(
     return output
 
 
-def write_splits(splits: dict[str, list[dict[str, Any]]], output_dir: Path, seed: int) -> dict[str, Any]:
+def write_splits(
+    splits: dict[str, list[dict[str, Any]]], output_dir: Path, seed: int
+) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest: dict[str, Any] = {"seed": seed, "splits": {}}
     seen: set[str] = set()
@@ -143,4 +151,3 @@ def iter_jsonl_files(path: Path) -> Iterable[Path]:
         yield from sorted(path.glob("*.jsonl"))
     else:
         raise DatasetError(f"Path does not exist: {path}")
-

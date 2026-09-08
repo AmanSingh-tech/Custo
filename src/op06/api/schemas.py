@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import math
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     customer = "customer"
     agent = "agent"
     action = "action"
@@ -57,10 +57,7 @@ class OfficialTriageRequest(BaseModel):
     turn_index: Annotated[int, Field(ge=0)] | None = None
 
     def to_internal(self) -> TriageRequest:
-        turns = [
-            Turn.model_construct(role=turn.speaker, text=turn.text)
-            for turn in self.context
-        ]
+        turns = [Turn.model_construct(role=turn.speaker, text=turn.text) for turn in self.context]
         return TriageRequest.model_construct(conversation=turns, context=None)
 
 

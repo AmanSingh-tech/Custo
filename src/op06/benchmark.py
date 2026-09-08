@@ -30,7 +30,9 @@ class CaseResult:
 
     @property
     def passed(self) -> bool:
-        return self.intent_correct and self.action_correct and self.human_correct and self.schema_valid
+        return (
+            self.intent_correct and self.action_correct and self.human_correct and self.schema_valid
+        )
 
 
 def _request_from_case(case: dict[str, Any]) -> TriageRequest:

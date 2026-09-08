@@ -22,11 +22,8 @@ def test_audit_counts_conversations_and_prefixes() -> None:
 
 def test_grouped_split_has_no_conversation_overlap() -> None:
     splits = split_examples(_examples(), seed=42)
-    id_sets = [
-        {example["conversation_id"] for example in examples} for examples in splits.values()
-    ]
+    id_sets = [{example["conversation_id"] for example in examples} for examples in splits.values()]
     assert not id_sets[0] & id_sets[1]
     assert not id_sets[0] & id_sets[2]
     assert not id_sets[1] & id_sets[2]
     assert split_examples(_examples(), seed=42) == splits
-

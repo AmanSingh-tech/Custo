@@ -18,4 +18,3 @@ class IntentClassifier(Protocol):
     version: str
 
     def predict(self, conversation: NormalizedConversation) -> IntentPrediction: ...
-

@@ -58,11 +58,14 @@ class TriagePipeline:
             if "action_pipeline" in artifact:
                 action_ranker = SklearnActionRanker(artifact)
             calibration = artifact.get("calibration", {})
-            if isinstance(calibration, dict) and isinstance(calibration.get("temperature"), (int, float)):
+            if isinstance(calibration, dict) and isinstance(
+                calibration.get("temperature"), (int, float)
+            ):
                 calibrator = TemperatureCalibrator(float(calibration["temperature"]))
         elif not actual.allow_demo_model:
             raise RuntimeError(
-                "No trained model configured. Set OP06_MODEL_PATH and OP06_POLICY_PATH for production, "
+                "No trained model configured. Set OP06_MODEL_PATH and OP06_POLICY_PATH "
+                "for production, "
                 "or explicitly set OP06_ALLOW_DEMO_MODEL=1 for the local demo."
             )
         return cls(actual, policy, intent_model, action_ranker, calibrator)
@@ -109,7 +112,9 @@ class TriagePipeline:
         )
         return response, trace
 
-    def triage_many(self, requests: list[TriageRequest]) -> list[tuple[TriageResponse, TriageTrace]]:
+    def triage_many(
+        self, requests: list[TriageRequest]
+    ) -> list[tuple[TriageResponse, TriageTrace]]:
         """Vectorized inference path used by corpus benchmark evaluation."""
         if not requests:
             return []
@@ -129,7 +134,9 @@ class TriagePipeline:
         ]
         candidate_sets = [decision.candidates for decision in policy_decisions]
         if isinstance(self.action_ranker, SklearnActionRanker):
-            actions = self.action_ranker.rank_many(candidate_sets, normalized, selected_intents, states)
+            actions = self.action_ranker.rank_many(
+                candidate_sets, normalized, selected_intents, states
+            )
         else:
             actions = [
                 self.action_ranker.rank(candidates, conversation, intent, state)

@@ -8,7 +8,6 @@ from difflib import SequenceMatcher
 from op06.intent.interface import IntentPrediction
 from op06.preprocessing.normalize import NormalizedConversation
 
-
 DEFAULT_KEYWORDS: dict[str, tuple[str, ...]] = {
     "card_not_working": (
         "card not working",

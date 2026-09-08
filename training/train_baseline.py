@@ -113,7 +113,11 @@ def main() -> None:
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, args.output)
-    print(json.dumps({key: value for key, value in artifact.items() if "pipeline" not in key}, indent=2))
+    print(
+        json.dumps(
+            {key: value for key, value in artifact.items() if "pipeline" not in key}, indent=2
+        )
+    )
 
 
 if __name__ == "__main__":

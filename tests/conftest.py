@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 
-import pytest
 import httpx
+import pytest
 
 os.environ.setdefault("OP06_ALLOW_DEMO_MODEL", "1")
 

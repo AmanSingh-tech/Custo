@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from op06.api.schemas import Turn
 
-
 _BIDI_CONTROLS = frozenset(
     {
         "\u061c",
@@ -89,4 +88,3 @@ def normalize_conversation(turns: list[Turn]) -> NormalizedConversation:
             flags.add("instruction_injection")
         normalized.append(NormalizedTurn(role=turn.role.value, text=text))
     return NormalizedConversation(tuple(normalized), frozenset(flags))
-

@@ -62,9 +62,7 @@ class SklearnActionRanker:
         intents: list[str],
         states: list[ConversationState],
     ) -> list[ActionPrediction]:
-        if not (
-            len(candidate_sets) == len(conversations) == len(intents) == len(states)
-        ):
+        if not (len(candidate_sets) == len(conversations) == len(intents) == len(states)):
             raise ValueError("Batch action-ranking inputs must have equal lengths")
         texts = [serialize_conversation(conversation) for conversation in conversations]
         probabilities_by_row = self._pipeline.predict_proba(texts)
@@ -75,7 +73,9 @@ class SklearnActionRanker:
             candidate_sets, conversations, states, probabilities_by_row, strict=True
         ):
             if not candidates:
-                predictions.append(ActionPrediction("escalate_human", 0.25, {"escalate_human": 1.0}, 0.0))
+                predictions.append(
+                    ActionPrediction("escalate_human", 0.25, {"escalate_human": 1.0}, 0.0)
+                )
                 continue
             all_scores = dict(zip(classes, (float(value) for value in probabilities), strict=True))
             allowed = {label: all_scores.get(label, 0.0) for label in candidates}
@@ -87,5 +87,7 @@ class SklearnActionRanker:
             ordered = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
             label, confidence = ordered[0]
             second = ordered[1][1] if len(ordered) > 1 else 0.0
-            predictions.append(ActionPrediction(label, confidence, scores, max(0.0, confidence - second)))
+            predictions.append(
+                ActionPrediction(label, confidence, scores, max(0.0, confidence - second))
+            )
         return predictions

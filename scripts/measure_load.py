@@ -13,7 +13,8 @@ from urllib.request import Request, urlopen
 
 def request(url: str, payload: bytes) -> tuple[float, int]:
     started = time.perf_counter()
-    with urlopen(Request(url, data=payload, headers={"content-type": "application/json"}), timeout=10) as response:
+    request = Request(url, data=payload, headers={"content-type": "application/json"})
+    with urlopen(request, timeout=10) as response:
         response.read()
         return (time.perf_counter() - started) * 1000, response.status
 

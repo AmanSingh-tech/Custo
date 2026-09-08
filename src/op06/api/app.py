@@ -22,7 +22,6 @@ from op06.api.schemas import (
 from op06.config import Settings
 from op06.pipeline import TriagePipeline
 
-
 logger = logging.getLogger("op06.api")
 settings = Settings.from_env()
 
@@ -127,9 +126,7 @@ async def triage(payload: dict[str, Any], response: Response, request: Request) 
         return result
     result, trace = pipeline.triage(payload)
     if official and trace.normalized.safety_flags:
-        result = TriageResponse(
-            intent="unknown", action="none", confidence=0.0, needs_human=True
-        )
+        result = TriageResponse(intent="unknown", action="none", confidence=0.0, needs_human=True)
     _apply_version_headers(response, pipeline)
     logger.info(
         "triage request_id=%s intent=%s action=%s confidence=%.4f needs_human=%s flags=%s",
@@ -146,9 +143,7 @@ async def triage(payload: dict[str, Any], response: Response, request: Request) 
 
 
 @app.post("/v1/triage", include_in_schema=False)
-async def triage_v1(
-    payload: dict[str, Any], response: Response, request: Request
-) -> Any:
+async def triage_v1(payload: dict[str, Any], response: Response, request: Request) -> Any:
     return await triage(payload, response, request)
 
 

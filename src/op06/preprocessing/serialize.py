@@ -15,4 +15,3 @@ def serialize_conversation(conversation: NormalizedConversation) -> str:
         )
         for turn in conversation.turns
     )
-

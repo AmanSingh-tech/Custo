@@ -4,7 +4,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-
 PACKAGE_ROOT = Path(__file__).resolve().parent
 
 
@@ -37,10 +36,9 @@ class Settings:
             max_request_bytes=int(os.getenv("OP06_MAX_REQUEST_BYTES", "65536")),
             confidence_threshold=_float_env("OP06_CONFIDENCE_THRESHOLD", 0.58),
             policy_path=(
-                Path(policy_value)
-                if policy_value
-                else PACKAGE_ROOT / "resources" / "policy.json"
+                Path(policy_value) if policy_value else PACKAGE_ROOT / "resources" / "policy.json"
             ),
             model_path=Path(model_value) if model_value else None,
-            allow_demo_model=os.getenv("OP06_ALLOW_DEMO_MODEL", "").casefold() in {"1", "true", "yes"},
+            allow_demo_model=os.getenv("OP06_ALLOW_DEMO_MODEL", "").casefold()
+            in {"1", "true", "yes"},
         )

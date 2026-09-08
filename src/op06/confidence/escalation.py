@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 _HOSTILE_FLAGS = frozenset(
     {"instruction_injection", "role_delimiter", "bidi_control", "nul_character"}
 )

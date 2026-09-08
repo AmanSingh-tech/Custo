@@ -11,7 +11,9 @@ def test_policy_selects_next_rule(pipeline) -> None:
     policy = load_policy(pipeline.settings.policy_path)
     engine = PolicyEngine(policy)
     empty_state = extract_state(normalize_conversation([Turn(role="customer", text="Card failed")]))
-    assert engine.candidates("card_not_working", empty_state).candidates[0] == "ask_when_issue_started"
+    assert (
+        engine.candidates("card_not_working", empty_state).candidates[0] == "ask_when_issue_started"
+    )
 
     known_time = extract_state(
         normalize_conversation([Turn(role="customer", text="My card failed yesterday")])
@@ -43,4 +45,3 @@ def test_unknown_intent_fails_safe(pipeline) -> None:
     decision = PolicyEngine(pipeline.policy).candidates("not-registered", state)
     assert decision.candidates == ("escalate_human",)
     assert decision.valid is False
-

@@ -25,4 +25,3 @@ def test_control_characters_are_flagged_and_removed() -> None:
     conversation = normalize_conversation([Turn(role="customer", text="card\u202enot working")])
     assert conversation.turns[0].text == "cardnot working"
     assert "bidi_control" in conversation.safety_flags
-

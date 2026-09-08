@@ -1,7 +1,8 @@
+import pytest
+
 from op06.api.schemas import TriageRequest
 from op06.config import Settings
 from op06.pipeline import TriagePipeline
-import pytest
 
 
 def request(*turns: tuple[str, str]) -> TriageRequest:

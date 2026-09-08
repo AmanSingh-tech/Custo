@@ -4,7 +4,6 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-
 REQUIRED_PATHS = (
     "instruction.md",
     "task.toml",
@@ -49,4 +48,3 @@ def validate_tasks(root: Path) -> dict[str, Any]:
         "invalid": len(errors),
         "errors": errors,
     }
-

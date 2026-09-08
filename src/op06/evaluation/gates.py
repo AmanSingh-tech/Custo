@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 MVP_GATES = {
     "intent_accuracy": 0.55,
     "intent_macro_f1": 0.50,
@@ -32,5 +31,7 @@ def evaluate_release_gates(summary: dict[str, Any]) -> dict[str, Any]:
     return {
         "passed": all(check["passed"] for check in checks.values()),
         "checks": checks,
-        "note": "Confidence error ratio follows the published OP-06 top-confident-70-percent scorer.",
+        "note": (
+            "Confidence error ratio follows the published OP-06 top-confident-70-percent scorer."
+        ),
     }

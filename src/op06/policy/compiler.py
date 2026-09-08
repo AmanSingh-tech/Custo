@@ -91,4 +91,3 @@ def load_policy(path: Path) -> CompiledPolicy:
     if not isinstance(document, dict):
         raise PolicyError("Policy root must be an object")
     return compile_policy_document(document)
-

@@ -11,4 +11,3 @@ class ConversationState:
     contradictions: tuple[str, ...]
     last_agent_text: str | None
     turn_index: int
-

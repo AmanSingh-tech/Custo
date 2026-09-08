@@ -5,7 +5,6 @@ import re
 from op06.preprocessing.normalize import NormalizedConversation
 from op06.state.schema import ConversationState
 
-
 _TIME = re.compile(
     r"\b(today|yesterday|tonight|morning|afternoon|evening|last\s+(night|week|month)|"
     r"since|ago|on\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)|\d{1,2}[:/]\d{1,2})\b",
@@ -22,7 +21,9 @@ _TRANSACTION_DETAIL = re.compile(
     re.I,
 )
 _ATM_DETAIL = re.compile(r"\b(atm|cash machine)\b.*\b(location|id|number|street|branch)\b", re.I)
-_VERIFIED = re.compile(r"\b(verified|verification complete|identity confirmed|last four digits)\b", re.I)
+_VERIFIED = re.compile(
+    r"\b(verified|verification complete|identity confirmed|last four digits)\b", re.I
+)
 _RESOLVED = re.compile(r"\b(it works|working now|resolved|fixed|sorted)\b", re.I)
 _NEGATION = re.compile(r"\b(no|not|never|didn['’]?t|have not|haven['’]?t)\b", re.I)
 
@@ -61,4 +62,3 @@ def extract_state(conversation: NormalizedConversation) -> ConversationState:
         last_agent_text=last_agent,
         turn_index=len(conversation.turns) - 1,
     )
-

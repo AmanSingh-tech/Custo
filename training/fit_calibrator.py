@@ -12,7 +12,9 @@ import joblib
 
 
 def _load_rows(path: Path) -> list[dict[str, Any]]:
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
     if not rows:
         raise ValueError("Calibration input is empty")
     return rows
@@ -21,7 +23,11 @@ def _load_rows(path: Path) -> list[dict[str, Any]]:
 def _serialize(turns: list[dict[str, Any]]) -> str:
     selected = turns if len(turns) <= 8 else [turns[0], *turns[-7:]]
     return "\n".join(
-        json.dumps({"role": str(turn["role"]), "text": str(turn["text"])}, ensure_ascii=False, separators=(",", ":"))
+        json.dumps(
+            {"role": str(turn["role"]), "text": str(turn["text"])},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
         for turn in selected
     )
 
@@ -33,7 +39,10 @@ def _calibrate(probability: float, temperature: float) -> float:
 
 
 def _brier(probabilities: list[float], correct: list[bool], temperature: float) -> float:
-    return sum((_calibrate(probability, temperature) - float(outcome)) ** 2 for probability, outcome in zip(probabilities, correct, strict=True)) / len(probabilities)
+    return sum(
+        (_calibrate(probability, temperature) - float(outcome)) ** 2
+        for probability, outcome in zip(probabilities, correct, strict=True)
+    ) / len(probabilities)
 
 
 def main() -> None:

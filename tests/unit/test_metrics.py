@@ -21,4 +21,3 @@ def test_calibration_metrics() -> None:
 def test_metrics_reject_mismatched_lengths() -> None:
     with pytest.raises(ValueError):
         classification_metrics(["a"], [])
-

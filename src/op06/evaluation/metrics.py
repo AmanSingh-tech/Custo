@@ -13,7 +13,9 @@ class ClassificationMetrics:
     support: int
 
 
-def classification_metrics(expected: Sequence[str], predicted: Sequence[str]) -> ClassificationMetrics:
+def classification_metrics(
+    expected: Sequence[str], predicted: Sequence[str]
+) -> ClassificationMetrics:
     if len(expected) != len(predicted):
         raise ValueError("expected and predicted must have equal lengths")
     if not expected:
@@ -21,15 +23,31 @@ def classification_metrics(expected: Sequence[str], predicted: Sequence[str]) ->
     labels = sorted(set(expected) | set(predicted))
     f1_scores: list[float] = []
     for label in labels:
-        true_positive = sum(e == label and p == label for e, p in zip(expected, predicted, strict=True))
-        false_positive = sum(e != label and p == label for e, p in zip(expected, predicted, strict=True))
-        false_negative = sum(e == label and p != label for e, p in zip(expected, predicted, strict=True))
-        precision = true_positive / (true_positive + false_positive) if true_positive + false_positive else 0.0
-        recall = true_positive / (true_positive + false_negative) if true_positive + false_negative else 0.0
+        true_positive = sum(
+            e == label for e, p in zip(expected, predicted, strict=True) if p == label
+        )
+        false_positive = sum(
+            e != label for e, p in zip(expected, predicted, strict=True) if p == label
+        )
+        false_negative = sum(
+            e == label for e, p in zip(expected, predicted, strict=True) if p != label
+        )
+        precision = (
+            true_positive / (true_positive + false_positive)
+            if true_positive + false_positive
+            else 0.0
+        )
+        recall = (
+            true_positive / (true_positive + false_negative)
+            if true_positive + false_negative
+            else 0.0
+        )
         f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
         f1_scores.append(f1)
     correct = sum(e == p for e, p in zip(expected, predicted, strict=True))
-    return ClassificationMetrics(correct / len(expected), sum(f1_scores) / len(f1_scores), len(expected))
+    return ClassificationMetrics(
+        correct / len(expected), sum(f1_scores) / len(f1_scores), len(expected)
+    )
 
 
 def expected_calibration_error(
@@ -64,7 +82,10 @@ def brier_score(correct: Sequence[bool], confidences: Sequence[float]) -> float:
         raise ValueError("correct and confidences must have equal lengths")
     if not correct:
         return 0.0
-    return sum((confidence - float(outcome)) ** 2 for outcome, confidence in zip(correct, confidences, strict=True)) / len(correct)
+    return sum(
+        (confidence - float(outcome)) ** 2
+        for outcome, confidence in zip(correct, confidences, strict=True)
+    ) / len(correct)
 
 
 def confidence_error_ratio(correct: Sequence[bool], confidences: Sequence[float]) -> float | None:
@@ -87,9 +108,10 @@ def confidence_error_ratio(correct: Sequence[bool], confidences: Sequence[float]
 
 
 def confusion_counts(expected: Sequence[str], predicted: Sequence[str]) -> dict[str, int]:
-    return dict(Counter(f"{actual} -> {guess}" for actual, guess in zip(expected, predicted, strict=True)))
+    return dict(
+        Counter(f"{actual} -> {guess}" for actual, guess in zip(expected, predicted, strict=True))
+    )
 
 
 def finite_unit_interval(value: float) -> bool:
     return math.isfinite(value) and 0.0 <= value <= 1.0
-

@@ -25,12 +25,19 @@ class PolicyEngine:
 
         matched: list[tuple[int, str]] = []
         for rule in workflow.rules:
-            missing_matches = all(not bool(state.slots.get(slot, False)) for slot in rule.when_missing)
+            missing_matches = all(
+                not bool(state.slots.get(slot, False)) for slot in rule.when_missing
+            )
             present_matches = all(bool(state.slots.get(slot, False)) for slot in rule.when_present)
-            if missing_matches and present_matches and rule.action not in self.policy.forbidden_actions:
+            if (
+                missing_matches
+                and present_matches
+                and rule.action not in self.policy.forbidden_actions
+            ):
                 matched.append((rule.priority, rule.action))
         if not matched:
             return PolicyDecision((workflow.fallback_action,), (), False, "no_permitted_action")
-        ordered = tuple(action for _, action in sorted(matched, key=lambda item: (-item[0], item[1])))
+        ordered = tuple(
+            action for _, action in sorted(matched, key=lambda item: (-item[0], item[1]))
+        )
         return PolicyDecision(ordered, ordered, True)
-

@@ -21,4 +21,3 @@ def test_unanswered_agent_question_is_pending() -> None:
     )
     state = extract_state(conversation)
     assert state.pending_questions == ("When did it begin?",)
-

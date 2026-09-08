@@ -17,17 +17,37 @@ def _dataset() -> dict:
                 "convo_id": "train-1",
                 "scenario": {"flow": "product_defect", "subflow": "return_size"},
                 "delexed": [
-                    {"speaker": "customer", "text": "I need a return", "targets": ["return_size", None, None]},
-                    {"speaker": "agent", "text": "Can I see your order?", "targets": ["return_size", "retrieve_utterance", None]},
-                    {"speaker": "action", "text": "validated", "targets": ["return_size", "take_action", "validate-purchase"]},
+                    {
+                        "speaker": "customer",
+                        "text": "I need a return",
+                        "targets": ["return_size", None, None],
+                    },
+                    {
+                        "speaker": "agent",
+                        "text": "Can I see your order?",
+                        "targets": ["return_size", "retrieve_utterance", None],
+                    },
+                    {
+                        "speaker": "action",
+                        "text": "validated",
+                        "targets": ["return_size", "take_action", "validate-purchase"],
+                    },
                 ],
             },
             {
                 "convo_id": "train-2",
                 "scenario": {"flow": "shipping_issue", "subflow": "status"},
                 "delexed": [
-                    {"speaker": "customer", "text": "Track my order", "targets": ["status", None, None]},
-                    {"speaker": "action", "text": "status found", "targets": ["status", "take_action", "shipping-status"]},
+                    {
+                        "speaker": "customer",
+                        "text": "Track my order",
+                        "targets": ["status", None, None],
+                    },
+                    {
+                        "speaker": "action",
+                        "text": "status found",
+                        "targets": ["status", "take_action", "shipping-status"],
+                    },
                 ],
             },
         ]
@@ -47,8 +67,16 @@ def test_extracts_only_action_prediction_points() -> None:
     second_dataset = _dataset()
     second_dataset["train"][0]["delexed"].extend(
         [
-            {"speaker": "customer", "text": "Thanks", "targets": ["return_size", None, None]},
-            {"speaker": "action", "text": "notified", "targets": ["return_size", "take_action", "notify-team"]},
+            {
+                "speaker": "customer",
+                "text": "Thanks",
+                "targets": ["return_size", None, None],
+            },
+            {
+                "speaker": "action",
+                "text": "notified",
+                "targets": ["return_size", "take_action", "notify-team"],
+            },
         ]
     )
     second_row = extract_abcd_examples(second_dataset)["train"][1]
