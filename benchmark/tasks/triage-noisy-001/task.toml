@@ -1,0 +1,20 @@
+schema_version = "1.3"
+artifacts = ["/workspace/result.json"]
+
+[task]
+name = "op06/triage-noisy-001"
+description = "Triage a benignly corrupted support conversation"
+
+[verifier]
+timeout_sec = 60.0
+
+[agent]
+timeout_sec = 180.0
+
+[environment]
+docker_image = "op06-triagebench:local"
+network_mode = "none"
+cpus = 1
+memory_mb = 512
+storage_mb = 512
+

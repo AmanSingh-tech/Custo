@@ -1,0 +1,125 @@
+{
+  "version": "policy-0.1.0",
+  "intents": [
+    "card_not_working",
+    "card_payment_wrong_exchange_rate",
+    "cash_withdrawal_wrong_exchange_rate",
+    "card_payment_not_recognised",
+    "cash_withdrawal_not_recognised",
+    "cash_withdrawal_issue",
+    "card_payment_reverted",
+    "card_payment_fee_charged",
+    "card_delivery_tracking",
+    "cash_withdrawal_fee_charged",
+    "cash_withdrawal_reverted",
+    "cash_withdrawal_missing",
+    "general_support"
+  ],
+  "actions": [
+    "ask_when_issue_started",
+    "ask_alternate_terminal_attempted",
+    "request_transaction_details",
+    "request_atm_details",
+    "explain_exchange_rate_process",
+    "explain_reverted_payment_timing",
+    "explain_fee_and_request_details",
+    "provide_card_tracking_steps",
+    "secure_account_and_escalate",
+    "request_clarification",
+    "escalate_human"
+  ],
+  "global_forbidden_actions": [
+    "execute_refund",
+    "close_customer_account",
+    "reveal_authentication_secret"
+  ],
+  "workflows": {
+    "card_not_working": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "ask_when_issue_started", "priority": 100, "when_missing": ["start_time_known"]},
+        {"action": "ask_alternate_terminal_attempted", "priority": 90, "when_present": ["start_time_known"], "when_missing": ["alternate_terminal_attempted"]}
+      ]
+    },
+    "card_payment_wrong_exchange_rate": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_transaction_details", "priority": 100, "when_missing": ["transaction_details_known"]},
+        {"action": "explain_exchange_rate_process", "priority": 90, "when_present": ["transaction_details_known"]}
+      ]
+    },
+    "cash_withdrawal_wrong_exchange_rate": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_atm_details", "priority": 100, "when_missing": ["atm_details_known"]},
+        {"action": "explain_exchange_rate_process", "priority": 90, "when_present": ["atm_details_known"]}
+      ]
+    },
+    "card_payment_not_recognised": {
+      "fallback_action": "secure_account_and_escalate",
+      "rules": [
+        {"action": "request_transaction_details", "priority": 100, "when_missing": ["transaction_details_known"]},
+        {"action": "secure_account_and_escalate", "priority": 90, "when_present": ["transaction_details_known"]}
+      ]
+    },
+    "cash_withdrawal_not_recognised": {
+      "fallback_action": "secure_account_and_escalate",
+      "rules": [
+        {"action": "request_atm_details", "priority": 100, "when_missing": ["atm_details_known"]},
+        {"action": "secure_account_and_escalate", "priority": 90, "when_present": ["atm_details_known"]}
+      ]
+    },
+    "cash_withdrawal_issue": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_atm_details", "priority": 100, "when_missing": ["atm_details_known"]},
+        {"action": "escalate_human", "priority": 90, "when_present": ["atm_details_known"]}
+      ]
+    },
+    "card_payment_reverted": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_transaction_details", "priority": 100, "when_missing": ["transaction_details_known"]},
+        {"action": "explain_reverted_payment_timing", "priority": 90, "when_present": ["transaction_details_known"]}
+      ]
+    },
+    "card_payment_fee_charged": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "explain_fee_and_request_details", "priority": 100}
+      ]
+    },
+    "card_delivery_tracking": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "provide_card_tracking_steps", "priority": 100}
+      ]
+    },
+    "cash_withdrawal_fee_charged": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "explain_fee_and_request_details", "priority": 100}
+      ]
+    },
+    "cash_withdrawal_reverted": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_atm_details", "priority": 100, "when_missing": ["atm_details_known"]},
+        {"action": "escalate_human", "priority": 90, "when_present": ["atm_details_known"]}
+      ]
+    },
+    "cash_withdrawal_missing": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_atm_details", "priority": 100, "when_missing": ["atm_details_known"]},
+        {"action": "escalate_human", "priority": 90, "when_present": ["atm_details_known"]}
+      ]
+    },
+    "general_support": {
+      "fallback_action": "escalate_human",
+      "rules": [
+        {"action": "request_clarification", "priority": 100}
+      ]
+    }
+  }
+}

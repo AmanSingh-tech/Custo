@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="OP-06 TriageBench developer test console" />
+    <title>OP-06 · Triage Console</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">OP-06 · TRIAGEBENCH</p>
+          <h1>Support triage console</h1>
+          <p class="lede">Build a conversation, call the live service, and inspect its policy-constrained recommendation.</p>
+        </div>
+        <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">Open API docs ↗</a>
+      </header>
+
+      <section class="status-row" aria-live="polite">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="service-status">Checking service…</span>
+        <span id="version-status" class="version-status"></span>
+      </section>
+
+      <div class="workspace">
+        <section class="panel conversation-panel" aria-labelledby="conversation-title">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">INPUT</p>
+              <h2 id="conversation-title">Conversation</h2>
+            </div>
+            <label class="scenario-control">
+              <span>Quick scenario</span>
+              <select id="scenario-select">
+                <option value="">Choose one…</option>
+                <option value="card-start">Card not working · first question</option>
+                <option value="card-progress">Card not working · next step</option>
+                <option value="fx">Wrong exchange rate</option>
+                <option value="hostile">Hostile input</option>
+              </select>
+            </label>
+          </div>
+
+          <p class="hint">Use one to eight turns. Customer and agent text is treated as untrusted conversation data.</p>
+          <div id="turn-list" class="turn-list"></div>
+
+          <div class="conversation-actions">
+            <button id="add-turn" class="button button-secondary" type="button">+ Add turn</button>
+            <span id="turn-count" class="turn-count">0 / 8 turns</span>
+          </div>
+          <div id="form-error" class="form-error" role="alert" hidden></div>
+          <button id="submit-triage" class="button button-primary" type="button">Run triage <span>→</span></button>
+        </section>
+
+        <section class="panel result-panel" aria-labelledby="result-title">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">OUTPUT</p>
+              <h2 id="result-title">Recommendation</h2>
+            </div>
+            <span id="request-timing" class="timing"></span>
+          </div>
+
+          <div id="empty-state" class="empty-state">
+            <div class="empty-mark">⌁</div>
+            <p>Run a conversation to see the model’s intent, permitted next action, confidence, and routing decision.</p>
+          </div>
+
+          <div id="result-content" hidden>
+            <div class="result-grid">
+              <article class="result-card result-card-wide">
+                <span>Intent</span>
+                <strong id="result-intent">—</strong>
+              </article>
+              <article class="result-card result-card-wide">
+                <span>Next action</span>
+                <strong id="result-action">—</strong>
+              </article>
+              <article class="result-card">
+                <span>Confidence</span>
+                <strong id="result-confidence">—</strong>
+                <div class="confidence-track"><i id="confidence-bar"></i></div>
+              </article>
+              <article class="result-card">
+                <span>Routing</span>
+                <strong id="result-routing">—</strong>
+              </article>
+            </div>
+            <details class="response-details">
+              <summary>Raw API response</summary>
+              <pre id="raw-response"></pre>
+            </details>
+          </div>
+
+          <div id="api-error" class="api-error" role="alert" hidden>
+            <strong>Request failed</strong>
+            <p id="api-error-message"></p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script src="/app/app.js" defer></script>
+  </body>
+</html>
