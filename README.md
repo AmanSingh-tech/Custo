@@ -138,3 +138,10 @@ already been met. Before submission, replace/extend the bundled registry, train 
 data, and run the hidden evaluator.
 
 See `docs/BUILD_PLAN.md` for milestones and `docs/DATA_FORMAT.md` for the canonical data format.
+
+## Submission evidence
+
+The judgment evidence is recorded in [docs/DECISIONS.md](docs/DECISIONS.md), with reconstructed
+raw runs in [docs/EXPERIMENT_LOG.md](docs/EXPERIMENT_LOG.md) and residual-risk ownership and pause
+conditions in [docs/MEMO.md](docs/MEMO.md). These documents distinguish development evidence from
+claims that require the hidden evaluator or official confidence scorer.
