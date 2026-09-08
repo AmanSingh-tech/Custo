@@ -45,14 +45,15 @@ class OfficialTurn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     speaker: Role
-    text: StrictStr
+    # Blank text is accepted by the published-format route and deliberately abstains.
+    text: Annotated[StrictStr, Field(max_length=8_000)]
 
 
 class OfficialTriageRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: Annotated[StrictStr, Field(min_length=1)]
-    context: Annotated[list[OfficialTurn], Field(max_length=8)]
+    context: Annotated[list[OfficialTurn], Field(min_length=1, max_length=8)]
     turn_index: Annotated[int, Field(ge=0)] | None = None
 
     def to_internal(self) -> TriageRequest:
@@ -87,4 +88,3 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
-

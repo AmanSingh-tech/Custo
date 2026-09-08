@@ -62,6 +62,30 @@ validated request
 The runtime cannot execute a refund or mutate a customer account. It only recommends the
 next action. Conversation text is treated as untrusted data, never as policy or instructions.
 
+## Project map
+
+| Location | Purpose |
+|---|---|
+| `src/op06/api/` | FastAPI contract, request limits, health checks, and browser test console. |
+| `src/op06/pipeline.py` | Normalization, classification, state, policy, confidence, and escalation. |
+| `src/op06/policy/` | Versioned policy compilation and action-candidate restrictions. |
+| `src/op06/abcd.py` and `training/` | Public-data import, grouped training, and temperature calibration. |
+| `src/op06/benchmark.py` and `benchmark/` | Smoke cases, paired robustness cases, metrics, gates, and task validation. |
+| `tests/` | Unit, API-contract, integration, and hostile-input regression tests. |
+| `docs/` | Build plan, data format, decisions, raw runs, analysis, and rollout memo. |
+
+## Request contract and safe behavior
+
+The service accepts the repository-native shape (`conversation` with `role` and `text`) and the
+published OP-06-compatible shape (`id` plus `context` with `speaker` and `text`). Published-format
+responses echo the supplied `id`. Both forms accept one to eight turns; malformed requests return
+`422`, oversized HTTP bodies return `413`, and a blank published-format message returns a safe
+`unknown` / `none` human-routing response.
+
+A policy conflict, no valid candidate, low confidence, hostile-input flag, or state contradiction
+routes the case to a person. The API is recommendation-only: it has no account credentials, payment
+access, or side-effecting tools, and an action model can rank only policy-permitted candidates.
+
 ## Use a trained baseline
 
 Training data uses one JSON object per line:
@@ -119,6 +143,42 @@ between visible instructions, environment description, solution, and verifier ex
 Smoke task packs are strict: every expected result must match. Corpus evaluation is statistical:
 `make evaluate-trained` evaluates release gates across the held-out corpus and prints only a bounded
 sample of failures, while preserving total failure counts in the report.
+
+## Qualification status: do not substitute local metrics
+
+The repository contains local smoke tasks and an ABCD-derived development benchmark. They are useful
+for regression testing, but they are **not qualification metrics**. The required published evaluator
+assets are absent from this repository:
+
+```text
+train.jsonl.gz
+dev.jsonl
+dev_noisy.jsonl
+hostile.jsonl
+grader.py
+```
+
+When those files are provided, keep them outside source control (for example under
+`data/official/`), train only on `train.jsonl.gz`, start the trained service, and run the supplied
+`grader.py` according to its own documented invocation. Preserve the unedited input files, exact
+command, service/model/policy versions, grader output, and evaluator-machine load result in
+`docs/EXPERIMENT_LOG.md`. Only then report clean and noisy performance, permitted-action violations,
+hostile/human-routing behavior, the official top-70 confidence-error ratio, p95 latency, and cost.
+
+Until that run exists, the correct claim is: **local development evidence passes; official
+qualification is pending the published files and grader.**
+
+## Review evidence map
+
+| Dimension | Evidence in this repository | Remaining uncertainty |
+|---|---|---|
+| Service contract | API-contract tests and `/healthz` | Exact grader edge cases are unavailable. |
+| Data provenance | ABCD importer and hashes in the experiment log | Official train/dev files are not present. |
+| Model quality | Reproducible ABCD-derived baseline report | Qualification performance is unknown. |
+| Policy correctness | Candidate mask and invalid-action metric | Official procedure and scorer are pending. |
+| Robustness | Paired smoke/noisy/hostile cases and security tests | Published noise families have not been run. |
+| Confidence and escalation | Calibration, thresholds, and human-route rules | Official top-70 ratio is unverified. |
+| Operations and accountability | Container, CI, load script, decision log, and memo | Evaluator-machine latency/cost are unknown. |
 
 ## Configuration
 

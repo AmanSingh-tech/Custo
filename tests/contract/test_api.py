@@ -46,6 +46,12 @@ async def test_published_op06_blank_text_abstains(client) -> None:
     }
 
 
+async def test_published_op06_rejects_empty_context(client) -> None:
+    response = await client.post("/triage", json={"id": "op06-empty", "context": []})
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_request"
+
+
 async def test_healthz_loads_service(client) -> None:
     response = await client.get("/healthz")
     assert response.status_code == 200
