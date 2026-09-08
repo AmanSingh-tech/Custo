@@ -10,6 +10,7 @@ from op06.data_tools import iter_jsonl_files, load_jsonl
 from op06.evaluation.metrics import (
     brier_score,
     classification_metrics,
+    confidence_error_ratio,
     expected_calibration_error,
 )
 from op06.pipeline import TriagePipeline
@@ -135,6 +136,7 @@ def run_benchmark(path: Path, pipeline: TriagePipeline | None = None) -> dict[st
             "invalid_policy_action_rate": invalid_actions / len(results) if results else 0.0,
             "expected_calibration_error": expected_calibration_error(action_correct, confidences),
             "brier_score": brier_score(action_correct, confidences),
+            "confidence_error_ratio": confidence_error_ratio(action_correct, confidences),
         },
         "failure_count_total": len(failed),
         "failures": failed[:failure_limit],

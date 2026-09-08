@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 class Role(str, Enum):
     customer = "customer"
     agent = "agent"
+    action = "action"
 
 
 class Turn(BaseModel):
@@ -38,6 +39,28 @@ class TriageRequest(BaseModel):
 
     conversation: Annotated[list[Turn], Field(min_length=1, max_length=8)]
     context: RequestContext | None = None
+
+
+class OfficialTurn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    speaker: Role
+    text: StrictStr
+
+
+class OfficialTriageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: Annotated[StrictStr, Field(min_length=1)]
+    context: Annotated[list[OfficialTurn], Field(max_length=8)]
+    turn_index: Annotated[int, Field(ge=0)] | None = None
+
+    def to_internal(self) -> TriageRequest:
+        turns = [
+            Turn.model_construct(role=turn.speaker, text=turn.text)
+            for turn in self.context
+        ]
+        return TriageRequest.model_construct(conversation=turns, context=None)
 
 
 class TriageResponse(BaseModel):

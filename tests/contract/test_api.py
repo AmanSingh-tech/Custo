@@ -18,6 +18,40 @@ async def test_triage_contract(client) -> None:
     assert "x-request-id" in response.headers
 
 
+async def test_published_op06_contract_echoes_id(client) -> None:
+    response = await client.post(
+        "/triage",
+        json={
+            "id": "op06-1",
+            "context": [{"speaker": "customer", "text": "My card is not working."}],
+        },
+    )
+    assert response.status_code == 200
+    assert set(response.json()) == {"id", "intent", "action", "confidence", "needs_human"}
+    assert response.json()["id"] == "op06-1"
+
+
+async def test_published_op06_blank_text_abstains(client) -> None:
+    response = await client.post(
+        "/triage",
+        json={"id": "op06-blank", "context": [{"speaker": "customer", "text": ""}]},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": "op06-blank",
+        "intent": "unknown",
+        "action": "none",
+        "confidence": 0.0,
+        "needs_human": True,
+    }
+
+
+async def test_healthz_loads_service(client) -> None:
+    response = await client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 async def test_v1_alias(client) -> None:
     payload = {"conversation": [{"role": "customer", "text": "Track my card delivery"}]}
     first = await client.post("/triage", json=payload)

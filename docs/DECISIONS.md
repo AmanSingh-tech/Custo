@@ -92,18 +92,20 @@ because calibration is fitted on a development split.
 as evidence but withhold the official confidence-error-ratio claim; (3) remove confidence entirely
 until the official scorer exists.
 
-**Constraint:** The official confidence-error-ratio definition and hidden evaluator were not supplied,
-and the measured ECE is materially worse than the classification metrics.
+**Constraint:** The published OP-06 scorer uses the error rate on the most-confident 70 percent,
+and the measured calibration quality is materially weaker than the classification metrics.
 
 **Experiment and observation:** The held-out report shows ECE `0.3726` and Brier score `0.3066`,
-despite intent accuracy `0.7133` and action accuracy `0.8158`. The official confidence-error-ratio
-gate therefore cannot be reproduced; see [R-2026-09-08-03](EXPERIMENT_LOG.md#r-2026-09-08-03).
+despite intent accuracy `0.7133` and action accuracy `0.8158`. The repository now implements the
+published top-70 scorer, but the recorded baseline report predates that metric, so no official ratio
+is claimed; see [R-2026-09-08-03](EXPERIMENT_LOG.md#r-2026-09-08-03).
 
 **Decision:** Choose option 2. Report the available calibration metrics, explicitly mark the official
 score as unverified, and keep human escalation available.
 
-**Reverse condition:** Reverse this decision when the evaluator supplies the scorer and an approved
-development split produces a confidence result that meets the stated gate across protected cases.
+**Reverse condition:** Reverse this decision when an approved development split produces a top-70
+confidence error ratio at or below `0.85` and the result holds on the published noisy and hostile
+cases.
 
 ## Assistance and independent checks
 

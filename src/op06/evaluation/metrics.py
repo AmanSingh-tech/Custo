@@ -67,6 +67,25 @@ def brier_score(correct: Sequence[bool], confidences: Sequence[float]) -> float:
     return sum((confidence - float(outcome)) ** 2 for outcome, confidence in zip(correct, confidences, strict=True)) / len(correct)
 
 
+def confidence_error_ratio(correct: Sequence[bool], confidences: Sequence[float]) -> float | None:
+    """Return the official OP-06 error ratio for the most-confident 70 percent."""
+    if len(correct) != len(confidences):
+        raise ValueError("correct and confidences must have equal lengths")
+    if not correct:
+        return None
+    ordered = sorted(zip(confidences, correct, strict=True), key=lambda item: -item[0])
+    cut = max(1, round(0.70 * len(ordered)))
+    threshold = ordered[cut - 1][0]
+    top = [item for item in ordered if item[0] >= threshold]
+    overall_accuracy = sum(item[1] for item in ordered) / len(ordered)
+    top_accuracy = sum(item[1] for item in top) / len(top)
+    overall_error = 1.0 - overall_accuracy
+    top_error = 1.0 - top_accuracy
+    if overall_error <= 0:
+        return 0.0 if top_error <= 0 else None
+    return round(top_error / overall_error, 4)
+
+
 def confusion_counts(expected: Sequence[str], predicted: Sequence[str]) -> dict[str, int]:
     return dict(Counter(f"{actual} -> {guess}" for actual, guess in zip(expected, predicted, strict=True)))
 

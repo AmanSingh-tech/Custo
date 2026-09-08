@@ -6,7 +6,7 @@ run from `/home/pendulum/custo`; outputs are bounded to the decision-relevant re
 
 ## R-2026-09-08-01: Runtime and security checks
 
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Question:** Does the service keep demo behavior explicit and survive the covered hostile-input cases?
 
 **Command:**
@@ -27,7 +27,7 @@ evaluator performance or production load behavior.
 
 ## R-2026-09-08-02: Policy-constrained held-out baseline
 
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Question:** Does policy masking preserve a valid action boundary without destroying baseline quality?
 
 **Source:** Reconstructed from [BASELINE_REPORT.md](BASELINE_REPORT.md), whose source release hash is
@@ -61,6 +61,29 @@ on this development corpus. This remains development evidence, not hidden qualif
 **Raw result:** Calibration ECE `0.3726`; Brier score `0.3066`. Classification metrics were stronger
 than calibration metrics, with intent accuracy `0.7133` and action accuracy `0.8158`.
 
-**Observation:** The result is inconclusive for the official confidence-error-ratio because that
-scorer was not supplied. The available metrics are reported, but the official confidence gate is
-not claimed as passed. This is the required failure/inconclusive experiment in the decision record.
+**Observation:** The published scorer is now implemented, but this historical report did not record
+the top-70 ratio, so the official confidence gate is not claimed as passed. This is the required
+failure/inconclusive experiment in the decision record.
+
+## R-2026-09-08-04: Contract and local load rehearsal
+
+**Date:** 2026-09-08
+**Question:** Does the service start from the required entrypoint and remain responsive under a
+stated local load?
+
+**Commands:**
+
+```text
+PORT=8765 scripts/reproduce.sh
+python3 scripts/measure_load.py --url http://127.0.0.1:8765/triage --requests 100 --concurrency 8
+```
+
+**Raw result:** 100/100 successful responses; p50 `36.321 ms`; p95 `51.428 ms`; local API cost
+`$0.00` per message and `$0.00` per 1,000 messages. The measurement excludes host electricity,
+depreciation, and any external model cost.
+
+**Contract checks:** A normal published-format request returned an echoed `id` and the required
+fields. A valid blank-text request returned `intent: "unknown"`, `action: "none"`, confidence `0`,
+and `needs_human: true`.
+
+**Limit:** This is local CPU evidence, not evaluator-machine qualification or a cloud cost estimate.

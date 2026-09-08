@@ -5,7 +5,8 @@
 The largest residual risk is that the trained classifier and candidate policy may perform well on
 the public ABCD-derived development corpus while misclassifying a hidden intent or recommending
 an inappropriate next action under a changed procedure. Confidence is also not yet demonstrated
-against the official confidence-error-ratio scorer: the available ECE is `0.3726`.
+against the official confidence-error-ratio scorer: the available ECE is `0.3726`, and the recorded
+baseline predates the top-70 ratio measurement.
 
 ## Who bears the cost
 
@@ -27,6 +28,10 @@ until the policy version, precedence, and regression tests are updated.
 The repository supports a tested MVP claim: 35 tests pass, the development baseline has `0.0000`
 invalid policy-action rate, and the recorded clean-to-noisy action gap is `0.0033`. It does not yet
 support a claim of qualification on the hidden evaluator or production-ready confidence calibration.
+The local reproduce/load rehearsal measured a `51.428 ms` p95 at concurrency 8 and zero external API
+cost; those figures are not a promise about evaluator hardware or hosted-model pricing. The fraction
+of official messages routed to a human must be reported after running the published clean/noisy data,
+because the hidden distribution is not in this repository.
 
 ## Assistance disclosure
 

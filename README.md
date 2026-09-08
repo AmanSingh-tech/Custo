@@ -131,13 +131,14 @@ sample of failures, while preserving total failure counts in the report.
 
 ## What remains dataset-dependent
 
-The official OP-06 dataset, complete label registries, evaluator fixtures, and exact confidence
-error-ratio definition were not present in the supplied material. Consequently, the included
-labels and smoke data are executable examples—not a claim that qualification thresholds have
-already been met. Before submission, replace/extend the bundled registry, train on the approved
-data, and run the hidden evaluator.
+The published OP-06 service contract, hostile pack, and confidence-error-ratio definition are now
+available from the hiring repository, but those evaluator files are not included here. Consequently,
+the included labels and smoke data are executable examples, not a qualification claim. Before
+submission, run the published data and grader, report noisy-slice and human-routing results, and
+measure p95 latency and cost on the evaluator machine.
 
 See `docs/BUILD_PLAN.md` for milestones and `docs/DATA_FORMAT.md` for the canonical data format.
+See [docs/ANALYSIS.md](docs/ANALYSIS.md) for the failure taxonomy and known evidence gaps.
 
 ## Submission evidence
 

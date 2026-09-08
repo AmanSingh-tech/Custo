@@ -5,13 +5,20 @@ import time
 import uuid
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from op06 import __version__
-from op06.api.schemas import ErrorDetail, ErrorResponse, TriageRequest, TriageResponse
+from op06.api.schemas import (
+    ErrorDetail,
+    ErrorResponse,
+    OfficialTriageRequest,
+    TriageRequest,
+    TriageResponse,
+)
 from op06.config import Settings
 from op06.pipeline import TriagePipeline
 
@@ -86,12 +93,43 @@ def _apply_version_headers(response: Response, pipeline: TriagePipeline) -> None
 
 @app.post(
     "/triage",
-    response_model=TriageResponse,
     responses={413: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
 )
-async def triage(payload: TriageRequest, response: Response, request: Request) -> TriageResponse:
+async def triage(payload: dict[str, Any], response: Response, request: Request) -> Any:
     pipeline = get_pipeline()
+    official = False
+    if isinstance(payload, dict):
+        official = "id" in payload or isinstance(payload.get("context"), list)
+        try:
+            if official:
+                parsed = OfficialTriageRequest.model_validate(payload)
+                payload = parsed.to_internal()
+            else:
+                payload = TriageRequest.model_validate(payload)
+        except Exception:
+            error = ErrorResponse(
+                error=ErrorDetail(
+                    code="invalid_request",
+                    message="Request does not match the triage schema",
+                    request_id=getattr(request.state, "request_id", None),
+                )
+            )
+            return JSONResponse(status_code=422, content=error.model_dump())
+    if official and not any(turn.text.strip() for turn in payload.conversation):
+        result = {
+            "id": parsed.id,
+            "intent": "unknown",
+            "action": "none",
+            "confidence": 0.0,
+            "needs_human": True,
+        }
+        _apply_version_headers(response, pipeline)
+        return result
     result, trace = pipeline.triage(payload)
+    if official and trace.normalized.safety_flags:
+        result = TriageResponse(
+            intent="unknown", action="none", confidence=0.0, needs_human=True
+        )
     _apply_version_headers(response, pipeline)
     logger.info(
         "triage request_id=%s intent=%s action=%s confidence=%.4f needs_human=%s flags=%s",
@@ -102,18 +140,26 @@ async def triage(payload: TriageRequest, response: Response, request: Request) -
         result.needs_human,
         ",".join(sorted(trace.normalized.safety_flags)) or "none",
     )
+    if official:
+        return {"id": parsed.id, **result.model_dump()}
     return result
 
 
-@app.post("/v1/triage", response_model=TriageResponse, include_in_schema=False)
+@app.post("/v1/triage", include_in_schema=False)
 async def triage_v1(
-    payload: TriageRequest, response: Response, request: Request
-) -> TriageResponse:
+    payload: dict[str, Any], response: Response, request: Request
+) -> Any:
     return await triage(payload, response, request)
 
 
 @app.get("/health/live")
 async def liveness() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/healthz")
+async def healthz() -> dict[str, str]:
+    get_pipeline()
     return {"status": "ok"}
 
 

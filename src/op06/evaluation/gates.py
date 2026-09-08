@@ -8,6 +8,7 @@ MVP_GATES = {
     "intent_macro_f1": 0.50,
     "action_accuracy": 0.55,
     "invalid_policy_action_rate": 0.01,
+    "confidence_error_ratio": 0.85,
 }
 
 
@@ -19,7 +20,7 @@ def evaluate_release_gates(summary: dict[str, Any]) -> dict[str, Any]:
         if value is None:
             checks[metric] = {"passed": False, "value": None, "threshold": threshold}
             continue
-        passed = value <= threshold if metric.endswith("_rate") else value >= threshold
+        passed = value <= threshold if metric.endswith(("_rate", "_ratio")) else value >= threshold
         checks[metric] = {"passed": passed, "value": value, "threshold": threshold}
 
     noisy_gap = summary.get("clean_to_noisy_action_gap")
@@ -31,5 +32,5 @@ def evaluate_release_gates(summary: dict[str, Any]) -> dict[str, Any]:
     return {
         "passed": all(check["passed"] for check in checks.values()),
         "checks": checks,
-        "note": "Confidence error ratio is intentionally not gated until the official scorer definition is supplied.",
+        "note": "Confidence error ratio follows the published OP-06 top-confident-70-percent scorer.",
     }
