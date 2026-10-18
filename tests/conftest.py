@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 os.environ.setdefault("OP06_ALLOW_DEMO_MODEL", "1")
+os.environ.setdefault("OP06_EXPOSE_TRACE", "1")
 
 from op06.api.app import app, get_pipeline
 from op06.pipeline import TriagePipeline

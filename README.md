@@ -28,8 +28,30 @@ curl -s http://127.0.0.1:8000/triage \
   -d '{"conversation":[{"role":"customer","text":"My card is not working."}]}'
 ```
 
-For manual testing, open [http://127.0.0.1:8000/app/](http://127.0.0.1:8000/app/). The built-in
-developer console sends requests to the same `/triage` route used by integrations and benchmark tasks.
+For manual testing, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) (redirects to `/app/`).
+The demo UI sends requests to the same `/triage` route used by integrations and benchmark tasks. When
+`OP06_EXPOSE_TRACE=1` is set, it also calls `/demo/explain` to show a step-by-step trace: input
+screening, intent scores, extracted state, policy candidates, and routing reasons. Link to a specific
+example with a hash, e.g. `/app/#hostile` (`card-start`, `card-progress`, `fx`, `fraud`, `hostile`, `vague`).
+
+## Deploy the demo
+
+The container listens on `$PORT` (default `8000`), so it runs unchanged on Render, Railway, Fly.io,
+or Cloud Run.
+
+```bash
+docker compose up --build            # local: http://127.0.0.1:8000/
+```
+
+**Render (free tier):** push this repository to GitHub, then in Render choose
+*New → Blueprint* and select the repo. `render.yaml` builds the Dockerfile, sets the demo
+environment, and health-checks `/health/ready`. Pushes to `main` redeploy automatically.
+
+| Variable | Demo value | Purpose |
+|---|---|---|
+| `OP06_ALLOW_DEMO_MODEL` | `1` | Use the embedded keyword model (no trained artifact needed). |
+| `OP06_EXPOSE_TRACE` | `1` | Enable `/demo/explain` for the UI trace. Leave unset in production. |
+| `OP06_CONFIDENCE_THRESHOLD` | `0.58` | Below this calibrated confidence, route to a human. |
 
 Example response:
 

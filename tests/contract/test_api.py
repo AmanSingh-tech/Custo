@@ -75,7 +75,7 @@ async def test_health_and_version(client) -> None:
 async def test_test_console_is_served(client) -> None:
     response = await client.get("/app/")
     assert response.status_code == 200
-    assert "Support triage console" in response.text
+    assert "<title>Custo Triage Demo</title>" in response.text
     assert (await client.get("/app/app.js")).status_code == 200
 
 

@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from op06 import __version__
 from op06.api.schemas import (
@@ -20,7 +20,7 @@ from op06.api.schemas import (
     TriageResponse,
 )
 from op06.config import Settings
-from op06.pipeline import TriagePipeline
+from op06.pipeline import TriagePipeline, TriageTrace
 
 logger = logging.getLogger("op06.api")
 settings = Settings.from_env()
@@ -39,8 +39,17 @@ app = FastAPI(
 )
 WEB_ROOT = Path(__file__).resolve().parents[1] / "web"
 WEB_INDEX = (WEB_ROOT / "index.html").read_text(encoding="utf-8")
-WEB_SCRIPT = (WEB_ROOT / "app.js").read_text(encoding="utf-8")
-WEB_STYLES = (WEB_ROOT / "styles.css").read_text(encoding="utf-8")
+_MEDIA_TYPES = {
+    ".js": "application/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+}
+# Assets are read once at import; the allowlist doubles as path-traversal protection.
+WEB_ASSETS = {
+    path.name: (path.read_text(encoding="utf-8"), _MEDIA_TYPES[path.suffix])
+    for path in WEB_ROOT.iterdir()
+    if path.suffix in _MEDIA_TYPES
+}
 
 
 @app.middleware("http")
@@ -147,6 +156,83 @@ async def triage_v1(payload: dict[str, Any], response: Response, request: Reques
     return await triage(payload, response, request)
 
 
+def _trace_payload(
+    trace: TriageTrace, threshold: float, forbidden: frozenset[str]
+) -> dict[str, Any]:
+    scores = sorted(trace.intent.scores.items(), key=lambda item: item[1], reverse=True)
+    return {
+        "normalized_turns": [
+            {"role": turn.role, "text": turn.text} for turn in trace.normalized.turns
+        ],
+        "safety_flags": sorted(trace.normalized.safety_flags),
+        "intent": {
+            "label": trace.intent.label,
+            "confidence": round(trace.intent.confidence, 4),
+            "margin": round(trace.intent.margin, 4),
+            "top_scores": [
+                {"intent": label, "score": round(score, 4)} for label, score in scores[:5]
+            ],
+        },
+        "state": {
+            "slots": trace.state.slots,
+            "pending_questions": list(trace.state.pending_questions),
+            "contradictions": list(trace.state.contradictions),
+            "turn_index": trace.state.turn_index,
+        },
+        "policy": {
+            "candidates": list(trace.policy.candidates),
+            "matched_rules": list(trace.policy.matched_rules),
+            "valid": trace.policy.valid,
+            "fallback_reason": trace.policy.fallback_reason,
+            "forbidden_actions": sorted(forbidden),
+        },
+        "escalation": {
+            "needs_human": trace.escalation.needs_human,
+            "reasons": list(trace.escalation.reasons),
+            "threshold": threshold,
+        },
+        "versions": {
+            "model": trace.model_version,
+            "action_model": trace.action_model_version,
+            "policy": trace.policy_version,
+        },
+    }
+
+
+@app.post("/demo/explain", include_in_schema=False)
+async def demo_explain(payload: dict[str, Any], response: Response, request: Request) -> Any:
+    """Demo-only view of the pipeline trace; disabled unless OP06_EXPOSE_TRACE is set."""
+    if not settings.expose_trace:
+        error = ErrorResponse(
+            error=ErrorDetail(
+                code="not_found",
+                message="Trace endpoint is disabled",
+                request_id=getattr(request.state, "request_id", None),
+            )
+        )
+        return JSONResponse(status_code=404, content=error.model_dump())
+    try:
+        parsed = TriageRequest.model_validate(payload)
+    except Exception:
+        error = ErrorResponse(
+            error=ErrorDetail(
+                code="invalid_request",
+                message="Request does not match the triage schema",
+                request_id=getattr(request.state, "request_id", None),
+            )
+        )
+        return JSONResponse(status_code=422, content=error.model_dump())
+    pipeline = get_pipeline()
+    result, trace = pipeline.triage(parsed)
+    _apply_version_headers(response, pipeline)
+    return {
+        "result": result.model_dump(),
+        "trace": _trace_payload(
+            trace, settings.confidence_threshold, pipeline.policy.forbidden_actions
+        ),
+    }
+
+
 @app.get("/health/live")
 async def liveness() -> dict[str, str]:
     return {"status": "ok"}
@@ -177,16 +263,24 @@ async def version() -> dict[str, str]:
     }
 
 
+@app.get("/", include_in_schema=False)
+async def root() -> RedirectResponse:
+    return RedirectResponse("/app/")
+
+
+@app.get("/app", include_in_schema=False)
+async def app_no_slash() -> RedirectResponse:
+    return RedirectResponse("/app/")
+
+
 @app.get("/app/", include_in_schema=False)
 async def test_console() -> HTMLResponse:
     return HTMLResponse(WEB_INDEX)
 
 
-@app.get("/app/app.js", include_in_schema=False)
-async def test_console_script() -> Response:
-    return Response(WEB_SCRIPT, media_type="application/javascript")
-
-
-@app.get("/app/styles.css", include_in_schema=False)
-async def test_console_styles() -> Response:
-    return Response(WEB_STYLES, media_type="text/css")
+@app.get("/app/{asset}", include_in_schema=False)
+async def test_console_asset(asset: str) -> Response:
+    if asset not in WEB_ASSETS:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found"}})
+    body, media_type = WEB_ASSETS[asset]
+    return Response(body, media_type=media_type, headers={"cache-control": "no-cache"})

@@ -14,6 +14,7 @@ services:
     environment:
       OP06_CONFIDENCE_THRESHOLD: "0.58"
       OP06_ALLOW_DEMO_MODEL: "1"
+      OP06_EXPOSE_TRACE: "1"
     deploy:
       resources:
         limits:

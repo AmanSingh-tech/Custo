@@ -27,6 +27,7 @@ class Settings:
     policy_path: Path = PACKAGE_ROOT / "resources" / "policy.json"
     model_path: Path | None = None
     allow_demo_model: bool = False
+    expose_trace: bool = False
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -41,4 +42,5 @@ class Settings:
             model_path=Path(model_value) if model_value else None,
             allow_demo_model=os.getenv("OP06_ALLOW_DEMO_MODEL", "").casefold()
             in {"1", "true", "yes"},
+            expose_trace=os.getenv("OP06_EXPOSE_TRACE", "").casefold() in {"1", "true", "yes"},
         )

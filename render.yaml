@@ -1,0 +1,19 @@
+# Render Blueprint for the public demo: https://render.com/docs/blueprint-spec
+# Deploy: Render dashboard -> New -> Blueprint -> select this repository.
+services:
+  - type: web
+    name: custo-triage-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      # Demo mode uses the embedded keyword model; swap for OP06_MODEL_PATH in production.
+      - key: OP06_ALLOW_DEMO_MODEL
+        value: "1"
+      # Enables /demo/explain so the web UI can show the step-by-step trace.
+      - key: OP06_EXPOSE_TRACE
+        value: "1"
+      - key: OP06_CONFIDENCE_THRESHOLD
+        value: "0.58"
