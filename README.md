@@ -10,7 +10,7 @@ credentials, payment access or side-effecting tools, so it cannot issue a refund
 Custo implements the **OP-06 TriageBench** service contract and includes a reproducible evaluation
 harness alongside the service.
 
-> **Live demo:** _add your Render URL here after deploying (see [Deploy](#deploy))_
+> **Live demo:** [custo-omega.vercel.app](https://custo-omega.vercel.app) · [API docs](https://custo-omega.vercel.app/docs)
 
 ```text
 customer: "Hi, my card is not working."

@@ -544,4 +544,14 @@ $("#copy").addEventListener("click", async () => {
 $("#theme-toggle").addEventListener("click", toggleTheme);
 
 renderAll();
+// Editing the URL hash in an open tab does not reload the page, so load the scenario here.
+window.addEventListener("hashchange", () => {
+  const scenario = SCENARIOS.find((item) => `#${item.id}` === location.hash);
+  if (!scenario || scenario.id === activeScenario) return;
+  activeScenario = scenario.id;
+  turns = scenario.turns.map((turn) => ({ ...turn }));
+  renderAll();
+  runTriage();
+});
+
 checkService().then(runTriage);
