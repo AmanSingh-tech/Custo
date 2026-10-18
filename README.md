@@ -12,6 +12,8 @@ harness alongside the service.
 
 > **Live demo:** [custo-omega.vercel.app](https://custo-omega.vercel.app) · [API docs](https://custo-omega.vercel.app/docs)
 
+![Custo demo UI: a three-message chat on the left and a green "Safe to handle automatically" decision with its five-step trace on the right](docs/images/demo-light.png)
+
 ```text
 customer: "Hi, my card is not working."
 agent:    "Sorry to hear that. When did this start?"
@@ -40,16 +42,44 @@ customer: "Yesterday afternoon."
 ## Demo UI
 
 Open the service root (`/`) to reach the web demo. It runs the first example as soon as it loads.
+A strip at the top explains the three steps: build the chat, run triage, read the decision.
 
-- **Conversation builder:** add customer and agent messages (up to 8), edit them in place, or
-  start from a one-click example.
-- **Decision:** a verdict ("Safe to handle automatically" or "Send to a human agent") with its
-  reason, the intent, the recommended next step, and a confidence gauge marked at the threshold.
-- **How it decided:** a five-step trace showing input screening, intent scores, facts already
-  established in the chat, the actions the policy allows (forbidden actions shown crossed out),
-  and the routing checks that fired.
-- **Developer extras:** the raw JSON response, a ready-to-run `curl` command, a session run
-  history, and light and dark themes. The layout works on phones.
+<table>
+  <tr>
+    <td width="68%"><img src="docs/images/demo-dark-handoff.png" alt="Dark theme: a prompt-injection message gets a red &quot;Send to a human agent&quot; verdict" /></td>
+    <td width="32%"><img src="docs/images/demo-mobile.png" alt="Phone layout: an unrecognised payment is sent to a person because the policy requires it" /></td>
+  </tr>
+  <tr>
+    <td>Dark theme: an injection attempt is sent to a person.</td>
+    <td>Phone layout: the policy requires a person for this step.</td>
+  </tr>
+</table>
+
+The page has three numbered sections. Each opens with a line explaining what it shows.
+
+1. **Conversation:** the chat Custo reads. Add customer and agent messages (up to 8), edit any
+   message in place, or start from a one-click example.
+2. **Decision:** a coloured verdict, "Safe to handle automatically" or "Send to a human agent",
+   with the reason. Below it are what the customer wants, the suggested next step, and "How sure
+   Custo is", a confidence bar with a line at the threshold for automatic handling.
+   - **How it decided:** five checks in order (input screening, what the customer wants, what the
+     chat already covers, allowed next steps, who handles it). Each states what it looks for and
+     what it found on this run.
+   - **For developers:** the raw JSON response and a ready-to-run `curl` command.
+3. **Your runs:** every run in the current tab, newest first. Click one to load it again.
+
+Colour always means the same thing:
+
+| Colour | Meaning |
+|---|---|
+| Blue | Your input (customer messages, the selected example) and the next step Custo chose |
+| Green | Safe to handle automatically, or a fact the chat already established |
+| Amber | A concern, such as a suspicious message or an unclear intent |
+| Red | A person should take over, or a step the policy never allows (also crossed out) |
+
+The demo has light and dark themes (it follows the system setting, with a toggle in the header)
+and works on phones. It loads two Google Fonts, Inter Tight and Marcellus, and falls back to
+system fonts when offline.
 
 Each example has a direct link of the form `/app/#<id>`. These are the results from the bundled
 demo model:
@@ -230,7 +260,7 @@ to the demo model silently.
 | `src/op06/abcd.py`, `training/` | ABCD dataset import, grouped splits, baseline training and calibration. |
 | `src/op06/benchmark.py`, `benchmark/` | Smoke cases, task packs, metrics and release gates. |
 | `tests/` | Unit, API contract, integration and hostile-input tests. |
-| `docs/` | Build plan, data format, decisions, experiment log, analysis and rollout memo. |
+| `docs/` | Build plan, data format, decisions, experiment log, analysis, rollout memo and demo UI screenshots (`docs/images/`). |
 | `Dockerfile`, `docker-compose.yaml`, `render.yaml` | Container image, local hardened run, and Render deploy. |
 | `index.py`, `.vercelignore` | Vercel entrypoint and bundle exclusions. |
 
