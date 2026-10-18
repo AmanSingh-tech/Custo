@@ -32,7 +32,14 @@ def get_pipeline() -> TriagePipeline:
 
 
 app = FastAPI(
-    title="OP-06 Triage Service",
+    title="Custo",
+    summary="Policy-constrained triage for customer-support conversations.",
+    description=(
+        "Send a support conversation of up to eight turns. Custo returns the customer's intent, "
+        "the next action the support policy allows, a calibrated confidence score, and whether "
+        "a person should take over. It is recommendation-only: it cannot move money or change "
+        "accounts. Try the [demo UI](/app/)."
+    ),
     version=__version__,
     docs_url="/docs",
     redoc_url=None,
