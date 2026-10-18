@@ -31,60 +31,65 @@
       </div>
 
       <div class="masthead-info">
-        <dl class="info-box">
-          <div><dt>Policy</dt><dd>Actions come from a versioned allow-list</dd></div>
-          <div><dt>Calibrated</dt><dd>Low confidence routes to a human</dd></div>
-          <div><dt>Guarded</dt><dd>Chat text is data, never instructions</dd></div>
-        </dl>
         <div class="intro">
           <h1>See how a support conversation gets triaged</h1>
-          <p>Build a chat between a customer and an agent. Custo works out what the customer needs, picks the next step the support policy allows, scores its own confidence and decides whether a person should take over. It only recommends: it cannot move money or change accounts.</p>
+          <p>Custo reads a chat between a customer and a support agent. It works out what the customer needs, suggests the next step the support policy allows, and decides whether a person should take over. It only suggests: it can't move money or change accounts.</p>
         </div>
+        <ol class="how" aria-label="How to use this demo">
+          <li class="how-blue"><span class="how-num">1</span><strong>Build the chat</strong><span>Pick an example or type messages as the customer and the agent.</span></li>
+          <li class="how-amber"><span class="how-num">2</span><strong>Run triage</strong><span>Custo reads the chat and checks it against the support policy.</span></li>
+          <li class="how-green"><span class="how-num">3</span><strong>Read the decision</strong><span>See the suggested next step and whether a person should take over.</span></li>
+        </ol>
       </div>
     </header>
 
     <main class="workspace">
       <section class="panel conversation" aria-labelledby="conv-title">
         <div class="panel-head">
-          <h2 id="conv-title"><span class="index">01</span>Conversation</h2>
+          <h2 id="conv-title"><span class="index index-blue">1</span>Conversation</h2>
           <span id="turn-count" class="label">0 / 8 turns</span>
         </div>
+        <p class="panel-desc">The chat Custo will read. Customer messages sit on the right in blue, agent replies on the left. Click any message to edit it.</p>
 
         <div class="scenarios" role="group" aria-label="Example scenarios">
-          <span class="label">Try an example</span>
+          <span class="label">Start from an example</span>
           <div id="scenario-list" class="chip-row"></div>
         </div>
 
         <ol id="transcript" class="transcript" aria-live="polite"></ol>
 
         <form id="composer" class="composer" autocomplete="off">
-          <div class="role-switch" role="radiogroup" aria-label="Who is speaking">
-            <label><input type="radio" name="role" value="customer" checked /><span>Customer</span></label>
-            <label><input type="radio" name="role" value="agent" /><span>Agent</span></label>
+          <div class="composer-label">
+            <span class="label">Add a message as</span>
+            <div class="role-switch" role="radiogroup" aria-label="Who is speaking">
+              <label><input type="radio" name="role" value="customer" checked /><span>Customer</span></label>
+              <label><input type="radio" name="role" value="agent" /><span>Agent</span></label>
+            </div>
           </div>
           <div class="composer-row">
             <textarea id="composer-text" rows="2" maxlength="8000" placeholder="Type a customer message…" aria-label="Message text"></textarea>
             <button id="add-turn" class="button button-outline" type="submit">Add</button>
           </div>
-          <p class="hint">Enter adds the message · <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> runs triage</p>
+          <p class="hint"><kbd>Enter</kbd> adds the message · <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> runs triage</p>
         </form>
 
         <div id="form-error" class="inline-error" role="alert" hidden></div>
 
         <div class="run-row">
-          <button id="clear" class="button button-outline" type="button">Clear</button>
+          <button id="clear" class="button button-outline" type="button">Clear chat</button>
           <button id="run" class="button button-solid" type="button">Run triage</button>
         </div>
       </section>
 
       <section class="panel decision" aria-labelledby="decision-title">
         <div class="panel-head">
-          <h2 id="decision-title"><span class="index">02</span>Decision</h2>
+          <h2 id="decision-title"><span class="index index-amber">2</span>Decision</h2>
           <span id="timing" class="label mono"></span>
         </div>
+        <p class="panel-desc">What Custo suggests for the latest customer message. <span class="key key-green">Green</span> means it is safe to handle automatically. <span class="key key-red">Red</span> means a person should take over.</p>
 
         <div id="empty" class="empty">
-          <p>Pick an example or write a conversation, then run triage. The decision and the reasoning behind it appear here.</p>
+          <p>Pick an example or write a conversation, then run triage.</p>
         </div>
 
         <div id="api-error" class="inline-error" role="alert" hidden></div>
@@ -98,15 +103,15 @@
 
           <dl class="metrics">
             <div class="metric">
-              <dt>Customer intent</dt>
+              <dt>What the customer wants</dt>
               <dd id="m-intent"></dd>
             </div>
             <div class="metric">
-              <dt>Recommended next step</dt>
+              <dt>Suggested next step</dt>
               <dd id="m-action"></dd>
             </div>
             <div class="metric metric-wide">
-              <dt>Confidence <span id="m-confidence" class="mono"></span></dt>
+              <dt>How sure Custo is <span id="m-confidence" class="mono"></span></dt>
               <dd>
                 <div class="gauge" role="img" id="gauge">
                   <i id="gauge-fill"></i>
@@ -119,10 +124,19 @@
 
           <div id="trace-block">
             <h3 class="section-title">How it decided</h3>
+            <p class="panel-desc">Five checks run in order. Each one says what it looks for and what it found.</p>
+            <ul class="legend" aria-label="Legend">
+              <li><span class="tag tag-chosen">Chosen</span></li>
+              <li><span class="tag tag-yes">✓ Already known</span></li>
+              <li><span class="tag tag-warn">Concern</span></li>
+              <li><span class="tag tag-blocked">Never allowed</span></li>
+            </ul>
             <ol id="trace" class="trace"></ol>
           </div>
           <p id="trace-off" class="caption" hidden>Step-by-step trace is turned off on this server (set <code>OP06_EXPOSE_TRACE=1</code> to enable it).</p>
 
+          <h3 class="section-title">For developers</h3>
+          <p class="panel-desc">The exact API response, and a <code>curl</code> command that reproduces this run.</p>
           <div class="tabs">
             <div class="tab-list" role="tablist">
               <button role="tab" aria-selected="true" data-tab="json">Response</button>
@@ -137,9 +151,9 @@
 
     <section class="history" aria-labelledby="history-title">
       <div class="panel-head">
-        <h2 id="history-title"><span class="index">03</span>This session</h2>
-        <span class="label">Click a run to reload it</span>
+        <h2 id="history-title"><span class="index index-green">3</span>Your runs</h2>
       </div>
+      <p class="panel-desc">Every run in this tab, newest first. Click one to load it again. Nothing is saved after you close the page.</p>
       <ol id="history" class="history-list"><li class="caption">No runs yet.</li></ol>
     </section>
 

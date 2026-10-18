@@ -304,7 +304,7 @@ function renderResult({ result, trace, elapsed }) {
 
   const verdict = $("#verdict");
   verdict.className = `verdict ${result.needs_human ? "verdict-human" : "verdict-auto"}`;
-  $("#verdict-icon").textContent = result.needs_human ? "Human review" : "Automatic";
+  $("#verdict-icon").textContent = result.needs_human ? "A person takes over" : "Custo can handle it";
   const title = result.needs_human ? "Send to a human agent" : "Safe to handle automatically";
   const titleNode = $("#verdict-title");
   if (titleNode.textContent !== title) {
@@ -339,8 +339,8 @@ function renderResult({ result, trace, elapsed }) {
   if (threshold !== null) marker.style.left = `${threshold * 100}%`;
   $("#gauge-caption").textContent =
     threshold === null
-      ? "Calibrated probability that intent and next step are both right."
-      : `Calibrated. The marker shows the ${pct(threshold)} threshold for automatic handling.`;
+      ? "The chance that both the intent and the next step are right."
+      : `The chance that both answers are right. Below the line at ${pct(threshold)}, a person takes over.`;
 
   $("#trace-block").hidden = !trace;
   $("#trace-off").hidden = Boolean(trace);
@@ -348,17 +348,26 @@ function renderResult({ result, trace, elapsed }) {
   renderCode();
 }
 
-function step(title, description, body, flagged = false) {
-  return h("li", { class: `step${flagged ? " step-flag" : ""}` }, h("h4", { text: title }), h("p", { text: description }), body);
+/** One trace step: what the check looks for (fixed), then what it found on this run. */
+function step(title, purpose, finding, body, flagged = false) {
+  return h(
+    "li",
+    { class: `step${flagged ? " step-flag" : ""}` },
+    h("h4", { text: title }),
+    h("p", { class: "step-purpose", text: purpose }),
+    h("p", { class: "step-finding", text: finding }),
+    body,
+  );
 }
 
 function renderTrace(result, trace) {
   const flags = trace.safety_flags;
   const screening = step(
     "Input screening",
+    "Looks for tricks hidden in the text, such as “ignore previous instructions” or invisible characters.",
     flags.length
-      ? "Suspicious patterns were found. The text is still classified, but the case is flagged."
-      : "Unicode normalised. No injection patterns or hidden characters found.",
+      ? "Suspicious patterns found. Custo still reads the chat, but flags it for a person."
+      : "Nothing suspicious found.",
     flags.length
       ? h("div", { class: "tags" }, flags.map((flag) => h("span", { class: "tag tag-warn", text: FLAG_LABELS[flag] || pretty(flag) })))
       : null,
@@ -368,7 +377,8 @@ function renderTrace(result, trace) {
   const scores = trace.intent.top_scores;
   const maxScore = Math.max(...scores.map((item) => item.score), 1e-6);
   const intent = step(
-    "Intent classification",
+    "What the customer wants",
+    "Scores how well the chat matches each known customer need. The longest bar wins.",
     `Picked “${pretty(result.intent)}” with a ${pct(trace.intent.margin)} margin over the runner-up.`,
     h(
       "div",
@@ -389,7 +399,8 @@ function renderTrace(result, trace) {
   const slots = Object.entries(trace.state.slots);
   const known = slots.filter(([, value]) => value === true).length;
   const state = step(
-    "Conversation state",
+    "What the chat already covers",
+    "Facts already established in the chat, so the agent isn't asked to repeat a question.",
     `${known} of ${slots.length} facts already established from the chat.`,
     h(
       "div",
@@ -403,9 +414,10 @@ function renderTrace(result, trace) {
   );
 
   const policy = step(
-    "Policy check",
+    "Allowed next steps",
+    "The support policy lists which steps are allowed at this point. Crossed-out steps are never allowed.",
     trace.policy.valid
-      ? `Policy ${trace.versions.policy} allows ${trace.policy.candidates.length} next step${trace.policy.candidates.length === 1 ? "" : "s"} here. Forbidden actions can never be chosen.`
+      ? `Policy ${trace.versions.policy} allows ${trace.policy.candidates.length} next step${trace.policy.candidates.length === 1 ? "" : "s"} here.`
       : `No rule matched, so the policy fell back to a safe default${trace.policy.fallback_reason ? ` (${pretty(trace.policy.fallback_reason)})` : ""}.`,
     h(
       "div",
@@ -420,13 +432,14 @@ function renderTrace(result, trace) {
 
   const reasons = trace.escalation.reasons;
   const routing = step(
-    "Routing",
+    "Who handles it",
+    "Decides whether the suggestion can be used directly or a person should take over.",
     reasons.length
-      ? `${reasons.length} check${reasons.length === 1 ? "" : "s"} triggered human review.`
-      : `Confidence ${pct(result.confidence)} clears the ${pct(trace.escalation.threshold)} threshold and nothing else triggered review.`,
+      ? `${reasons.length} check${reasons.length === 1 ? "" : "s"} raised a concern, so a person should take over.`
+      : `Confidence ${pct(result.confidence)} is above the ${pct(trace.escalation.threshold)} line and nothing else raised a concern.`,
     reasons.length
       ? h("div", { class: "tags" }, reasons.map((reason) => h("span", { class: "tag tag-warn", text: REASON_LABELS[reason] || pretty(reason) })))
-      : h("div", { class: "tags" }, h("span", { class: "tag tag-yes", text: "✓ Auto-handle" })),
+      : h("div", { class: "tags" }, h("span", { class: "tag tag-yes", text: "✓ Custo can handle it" })),
     reasons.length > 0,
   );
 
