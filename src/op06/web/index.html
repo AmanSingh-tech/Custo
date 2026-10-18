@@ -6,6 +6,9 @@
     <meta name="description" content="Custo triage demo: policy-constrained customer-support recommendations with calibrated confidence and human routing." />
     <title>Custo Triage Demo</title>
     <link rel="icon" href="/app/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Marcellus&display=swap" />
     <link rel="stylesheet" href="/app/styles.css" />
     <script>
       try {
@@ -15,142 +18,135 @@
     </script>
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 12h5l2-5 2 10 2-5h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-        <span class="brand-name">Custo</span>
-        <span class="brand-sub">Support triage</span>
+    <header class="masthead">
+      <div class="masthead-top">
+        <a class="wordmark" href="/app/" aria-label="Custo triage, home">
+          <span class="wordmark-sans">Custo</span><span class="wordmark-serif">Triage</span>
+        </a>
+        <nav class="nav" aria-label="Site">
+          <span id="service-pill" class="pill pill-pending" aria-live="polite"><i></i><span>Connecting</span></span>
+          <a class="nav-link" href="/docs" target="_blank" rel="noreferrer">API docs</a>
+          <button id="theme-toggle" class="nav-link" type="button" aria-label="Toggle colour theme">Theme</button>
+        </nav>
       </div>
-      <div class="topbar-right">
-        <span id="service-pill" class="pill pill-pending" aria-live="polite"><i></i><span>Connecting…</span></span>
-        <a class="ghost-link" href="/docs" target="_blank" rel="noreferrer">API docs</a>
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle colour theme">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        </button>
+
+      <div class="masthead-info">
+        <dl class="info-box">
+          <div><dt>Policy</dt><dd>Actions come from a versioned allow-list</dd></div>
+          <div><dt>Calibrated</dt><dd>Low confidence routes to a human</dd></div>
+          <div><dt>Guarded</dt><dd>Chat text is data, never instructions</dd></div>
+        </dl>
+        <div class="intro">
+          <h1>See how a support conversation gets triaged</h1>
+          <p>Build a chat between a customer and an agent. Custo works out what the customer needs, picks the next step the support policy allows, scores its own confidence and decides whether a person should take over. It only recommends: it cannot move money or change accounts.</p>
+        </div>
       </div>
     </header>
 
-    <main class="shell">
-      <section class="intro">
-        <h1>See how a support conversation gets triaged.</h1>
-        <p>Paste or build a chat between a customer and an agent. The service works out what the customer needs and picks the next step the support policy allows. It also scores its own confidence and decides whether a person should take over. It only recommends: it cannot move money or change accounts.</p>
-        <ul class="facts">
-          <li><strong>Policy-bounded</strong> Actions come from a versioned allow-list</li>
-          <li><strong>Calibrated</strong> Low confidence routes to a human</li>
-          <li><strong>Injection-aware</strong> Chat text is data, never instructions</li>
-        </ul>
-      </section>
-
-      <div class="workspace">
-        <section class="card conversation" aria-labelledby="conv-title">
-          <div class="card-head">
-            <h2 id="conv-title">Conversation</h2>
-            <span id="turn-count" class="muted small">0 / 8 turns</span>
-          </div>
-
-          <div class="scenarios" role="group" aria-label="Example scenarios">
-            <span class="muted small">Try an example</span>
-            <div id="scenario-list" class="chip-row"></div>
-          </div>
-
-          <ol id="transcript" class="transcript" aria-live="polite"></ol>
-
-          <form id="composer" class="composer" autocomplete="off">
-            <div class="role-switch" role="radiogroup" aria-label="Who is speaking">
-              <label><input type="radio" name="role" value="customer" checked /><span>Customer</span></label>
-              <label><input type="radio" name="role" value="agent" /><span>Agent</span></label>
-            </div>
-            <div class="composer-row">
-              <textarea id="composer-text" rows="2" maxlength="8000" placeholder="Type a customer message…" aria-label="Message text"></textarea>
-              <button id="add-turn" class="button button-quiet" type="submit">Add</button>
-            </div>
-            <p class="muted small hint">Enter adds the message. Ctrl/⌘ + Enter runs triage.</p>
-          </form>
-
-          <div id="form-error" class="inline-error" role="alert" hidden></div>
-
-          <div class="run-row">
-            <button id="clear" class="button button-quiet" type="button">Clear</button>
-            <button id="run" class="button button-primary" type="button">Run triage</button>
-          </div>
-        </section>
-
-        <section class="card decision" aria-labelledby="decision-title">
-          <div class="card-head">
-            <h2 id="decision-title">Decision</h2>
-            <span id="timing" class="muted small mono"></span>
-          </div>
-
-          <div id="empty" class="empty">
-            <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><path d="M6 24h10l4-10 8 20 4-10h10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <p>Pick an example or write a conversation, then run triage. The decision and the reasoning behind it appear here.</p>
-          </div>
-
-          <div id="api-error" class="inline-error" role="alert" hidden></div>
-
-          <div id="result" hidden>
-            <div id="verdict" class="verdict">
-              <span id="verdict-icon" class="verdict-icon" aria-hidden="true"></span>
-              <div>
-                <strong id="verdict-title"></strong>
-                <span id="verdict-sub"></span>
-              </div>
-            </div>
-
-            <dl class="metrics">
-              <div class="metric">
-                <dt>Customer intent</dt>
-                <dd id="m-intent"></dd>
-              </div>
-              <div class="metric">
-                <dt>Recommended next step</dt>
-                <dd id="m-action"></dd>
-              </div>
-              <div class="metric metric-wide">
-                <dt>Confidence <span id="m-confidence" class="mono"></span></dt>
-                <dd>
-                  <div class="gauge" role="img" id="gauge">
-                    <i id="gauge-fill"></i>
-                    <b id="gauge-threshold"></b>
-                  </div>
-                  <span id="gauge-caption" class="muted small"></span>
-                </dd>
-              </div>
-            </dl>
-
-            <div id="trace-block">
-              <h3 class="section-title">How it decided</h3>
-              <ol id="trace" class="trace"></ol>
-            </div>
-            <p id="trace-off" class="muted small" hidden>Step-by-step trace is turned off on this server (set <code>OP06_EXPOSE_TRACE=1</code> to enable it).</p>
-
-            <div class="tabs">
-              <div class="tab-list" role="tablist">
-                <button role="tab" aria-selected="true" data-tab="json">Response</button>
-                <button role="tab" aria-selected="false" data-tab="curl">cURL</button>
-                <button id="copy" class="copy" type="button">Copy</button>
-              </div>
-              <pre id="code" class="code mono"></pre>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section class="card history" aria-labelledby="history-title">
-        <div class="card-head">
-          <h2 id="history-title">This session</h2>
-          <span class="muted small">Click a run to reload it</span>
+    <main class="workspace">
+      <section class="panel conversation" aria-labelledby="conv-title">
+        <div class="panel-head">
+          <h2 id="conv-title"><span class="index">01</span>Conversation</h2>
+          <span id="turn-count" class="label">0 / 8 turns</span>
         </div>
-        <ol id="history" class="history-list"><li class="muted small">No runs yet.</li></ol>
+
+        <div class="scenarios" role="group" aria-label="Example scenarios">
+          <span class="label">Try an example</span>
+          <div id="scenario-list" class="chip-row"></div>
+        </div>
+
+        <ol id="transcript" class="transcript" aria-live="polite"></ol>
+
+        <form id="composer" class="composer" autocomplete="off">
+          <div class="role-switch" role="radiogroup" aria-label="Who is speaking">
+            <label><input type="radio" name="role" value="customer" checked /><span>Customer</span></label>
+            <label><input type="radio" name="role" value="agent" /><span>Agent</span></label>
+          </div>
+          <div class="composer-row">
+            <textarea id="composer-text" rows="2" maxlength="8000" placeholder="Type a customer message…" aria-label="Message text"></textarea>
+            <button id="add-turn" class="button button-outline" type="submit">Add</button>
+          </div>
+          <p class="hint">Enter adds the message · <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> runs triage</p>
+        </form>
+
+        <div id="form-error" class="inline-error" role="alert" hidden></div>
+
+        <div class="run-row">
+          <button id="clear" class="button button-outline" type="button">Clear</button>
+          <button id="run" class="button button-solid" type="button">Run triage</button>
+        </div>
       </section>
 
-      <footer class="footer muted small">
-        <span id="versions">—</span>
-        <span>Recommendation-only service · <a href="/health/ready">health</a> · <a href="/version">version</a></span>
-      </footer>
+      <section class="panel decision" aria-labelledby="decision-title">
+        <div class="panel-head">
+          <h2 id="decision-title"><span class="index">02</span>Decision</h2>
+          <span id="timing" class="label mono"></span>
+        </div>
+
+        <div id="empty" class="empty">
+          <p>Pick an example or write a conversation, then run triage. The decision and the reasoning behind it appear here.</p>
+        </div>
+
+        <div id="api-error" class="inline-error" role="alert" hidden></div>
+
+        <div id="result" hidden>
+          <div id="verdict" class="verdict">
+            <span id="verdict-icon" class="verdict-icon" aria-hidden="true"></span>
+            <strong id="verdict-title"></strong>
+            <span id="verdict-sub"></span>
+          </div>
+
+          <dl class="metrics">
+            <div class="metric">
+              <dt>Customer intent</dt>
+              <dd id="m-intent"></dd>
+            </div>
+            <div class="metric">
+              <dt>Recommended next step</dt>
+              <dd id="m-action"></dd>
+            </div>
+            <div class="metric metric-wide">
+              <dt>Confidence <span id="m-confidence" class="mono"></span></dt>
+              <dd>
+                <div class="gauge" role="img" id="gauge">
+                  <i id="gauge-fill"></i>
+                  <b id="gauge-threshold"></b>
+                </div>
+                <span id="gauge-caption" class="caption"></span>
+              </dd>
+            </div>
+          </dl>
+
+          <div id="trace-block">
+            <h3 class="section-title">How it decided</h3>
+            <ol id="trace" class="trace"></ol>
+          </div>
+          <p id="trace-off" class="caption" hidden>Step-by-step trace is turned off on this server (set <code>OP06_EXPOSE_TRACE=1</code> to enable it).</p>
+
+          <div class="tabs">
+            <div class="tab-list" role="tablist">
+              <button role="tab" aria-selected="true" data-tab="json">Response</button>
+              <button role="tab" aria-selected="false" data-tab="curl">cURL</button>
+              <button id="copy" class="copy" type="button">Copy</button>
+            </div>
+            <pre id="code" class="code mono"></pre>
+          </div>
+        </div>
+      </section>
     </main>
+
+    <section class="history" aria-labelledby="history-title">
+      <div class="panel-head">
+        <h2 id="history-title"><span class="index">03</span>This session</h2>
+        <span class="label">Click a run to reload it</span>
+      </div>
+      <ol id="history" class="history-list"><li class="caption">No runs yet.</li></ol>
+    </section>
+
+    <footer class="footer">
+      <span id="versions" class="mono">—</span>
+      <span>Recommendation-only service · <a href="/health/ready">Health</a> · <a href="/version">Version</a></span>
+    </footer>
     <script src="/app/app.js" defer></script>
   </body>
 </html>

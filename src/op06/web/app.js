@@ -125,7 +125,7 @@ function renderScenarios() {
   );
 }
 
-function renderTranscript() {
+function renderTranscript(animateLast = false) {
   const list = $("#transcript");
   if (!turns.length) {
     list.replaceChildren(
@@ -147,7 +147,7 @@ function renderTranscript() {
         });
         return h(
           "li",
-          { class: `bubble bubble-${turn.role}` },
+          { class: `bubble bubble-${turn.role}${animateLast && index === turns.length - 1 ? " bubble-new" : ""}` },
           h("span", { class: "bubble-who", text: turn.role }),
           body,
           h(
@@ -212,7 +212,7 @@ function addTurn() {
   // Conversations usually alternate, so flip the speaker for the next message.
   document.querySelector(`input[name="role"][value="${role === "customer" ? "agent" : "customer"}"]`).checked = true;
   markCustom();
-  renderTranscript();
+  renderTranscript(true);
   textarea.focus();
 }
 
@@ -304,8 +304,20 @@ function renderResult({ result, trace, elapsed }) {
 
   const verdict = $("#verdict");
   verdict.className = `verdict ${result.needs_human ? "verdict-human" : "verdict-auto"}`;
-  $("#verdict-icon").textContent = result.needs_human ? "!" : "✓";
-  $("#verdict-title").textContent = result.needs_human ? "Send to a human agent" : "Safe to handle automatically";
+  $("#verdict-icon").textContent = result.needs_human ? "Human review" : "Automatic";
+  const title = result.needs_human ? "Send to a human agent" : "Safe to handle automatically";
+  const titleNode = $("#verdict-title");
+  if (titleNode.textContent !== title) {
+    titleNode.textContent = title;
+    // A short blur crossfade marks that the verdict itself changed.
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    titleNode.animate(
+      still
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [{ opacity: 0, filter: "blur(6px)", transform: "translateY(6px)" }, { opacity: 1, filter: "blur(0)", transform: "none" }],
+      { duration: 280, easing: "cubic-bezier(.23, 1, .32, 1)" },
+    );
+  }
   const reasons = trace?.escalation.reasons ?? [];
   $("#verdict-sub").textContent = result.needs_human
     ? reasons.length
@@ -318,7 +330,7 @@ function renderResult({ result, trace, elapsed }) {
 
   const threshold = trace?.escalation.threshold ?? null;
   $("#m-confidence").textContent = pct(result.confidence);
-  $("#gauge-fill").style.width = `${Math.round(result.confidence * 100)}%`;
+  $("#gauge-fill").style.transform = `scaleX(${result.confidence})`;
   const gauge = $("#gauge");
   gauge.classList.toggle("gauge-low", threshold !== null && result.confidence < threshold);
   gauge.setAttribute("aria-label", `Confidence ${pct(result.confidence)}`);
@@ -366,7 +378,7 @@ function renderTrace(result, trace) {
           "div",
           { class: `bar${index === 0 ? " bar-top" : ""}` },
           h("span", { text: pretty(item.intent), title: item.intent }),
-          h("span", { class: "bar-track" }, h("i", { style: `width:${(item.score / maxScore) * 100}%` })),
+          h("span", { class: "bar-track" }, h("i", { style: `transform:scaleX(${item.score / maxScore})` })),
           h("span", { class: "mono", text: item.score.toFixed(2) }),
         ),
       ),
@@ -481,11 +493,20 @@ async function checkService() {
   }
 }
 
-function toggleTheme() {
+function currentTheme() {
   const root = document.documentElement;
-  const current = root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const next = current === "dark" ? "light" : "dark";
-  root.dataset.theme = next;
+  return root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+
+function labelThemeToggle() {
+  // The button names the theme it switches to, like a language link.
+  $("#theme-toggle").textContent = currentTheme() === "dark" ? "Light" : "Dark";
+}
+
+function toggleTheme() {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  labelThemeToggle();
   try {
     localStorage.setItem("custo-theme", next);
   } catch {
@@ -542,6 +563,8 @@ $("#copy").addEventListener("click", async () => {
   setTimeout(() => ($("#copy").textContent = "Copy"), 1400);
 });
 $("#theme-toggle").addEventListener("click", toggleTheme);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", labelThemeToggle);
+labelThemeToggle();
 
 renderAll();
 // Editing the URL hash in an open tab does not reload the page, so load the scenario here.
