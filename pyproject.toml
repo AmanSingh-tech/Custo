@@ -40,3 +40,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.vercel]
+# Root index.py adds src/ to the import path and enables demo mode for the hosted demo.
+entrypoint = "index:app"
