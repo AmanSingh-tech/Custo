@@ -95,6 +95,24 @@ docker compose up --build   # http://127.0.0.1:8000/
 
 ## Deploy
 
+### Vercel
+
+The FastAPI app runs on Vercel as a single Python function. No `npm` build is needed, because the
+frontend is plain HTML, CSS and JS served by the API.
+
+1. Push this repository to GitHub.
+2. Sign in to [Vercel](https://vercel.com) with GitHub. Choose **Add New → Project**, import
+   this repository, and keep the defaults (Framework Preset: **FastAPI** or **Other**, with no
+   build command or output directory).
+3. Click **Deploy**. Your demo URL looks like `https://custo.vercel.app`.
+
+Vercel finds the app through the root [`index.py`](index.py). That file turns on
+`OP06_ALLOW_DEMO_MODEL` and `OP06_EXPOSE_TRACE` by default, and project environment variables
+override them. [`.vercelignore`](.vercelignore) keeps tests, docs and training code out of the
+bundle. Every push to `main` redeploys.
+
+### Render or any container host
+
 The container listens on `$PORT` (default `8000`), so it runs unchanged on Render, Railway,
 Fly.io or Google Cloud Run. The repository includes a Render Blueprint:
 
@@ -214,6 +232,7 @@ to the demo model silently.
 | `tests/` | Unit, API contract, integration and hostile-input tests. |
 | `docs/` | Build plan, data format, decisions, experiment log, analysis and rollout memo. |
 | `Dockerfile`, `docker-compose.yaml`, `render.yaml` | Container image, local hardened run, and Render deploy. |
+| `index.py`, `.vercelignore` | Vercel entrypoint and bundle exclusions. |
 
 ## Training on real data
 

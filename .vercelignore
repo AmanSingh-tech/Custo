@@ -1,0 +1,14 @@
+# Keep the Vercel function bundle to the runtime service only.
+.github
+.venv
+benchmark
+docs
+scripts
+tests
+training
+data
+models
+reports
+Dockerfile
+docker-compose.yaml
+render.yaml
