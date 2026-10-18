@@ -1,230 +1,293 @@
-# OP-06 TriageBench
+# Custo
 
-OP-06 is a policy-constrained customer-support triage service plus a reproducible
-evaluation harness. The API accepts up to eight role-tagged conversation turns and returns
-an intent, a policy-permitted next action, calibrated confidence, and a human-routing flag.
+**Policy-constrained triage for customer-support conversations.**
 
-This repository has two deliberate modes. The developer console and smoke suite run with an
-explicit demo model. Production mode requires a trained model artifact and generated/approved
-policy artifact; it does not silently fall back to embedded keyword labels. When an approved
-dataset is available, `training/train_baseline.py` produces a TF-IDF model bundle that plugs into
-the same runtime through `OP06_MODEL_PATH`.
+Custo reads a support chat between a customer and an agent and returns four things: what the
+customer needs (intent), the next step the support policy allows (action), a calibrated confidence
+score, and whether a person should take over. It only makes recommendations. It has no
+credentials, payment access or side-effecting tools, so it cannot issue a refund or change an account.
+
+Custo implements the **OP-06 TriageBench** service contract and includes a reproducible evaluation
+harness alongside the service.
+
+> **Live demo:** _add your Render URL here after deploying (see [Deploy](#deploy))_
+
+```text
+customer: "Hi, my card is not working."
+agent:    "Sorry to hear that. When did this start?"
+customer: "Yesterday afternoon."
+                │
+                ▼
+{ "intent": "card_not_working",
+  "action": "ask_alternate_terminal_attempted",
+  "confidence": 0.6191,
+  "needs_human": false }
+```
+
+## Contents
+
+- [Demo UI](#demo-ui)
+- [Quick start](#quick-start)
+- [Deploy](#deploy)
+- [API](#api)
+- [How it works](#how-it-works)
+- [Configuration](#configuration)
+- [Project structure](#project-structure)
+- [Training on real data](#training-on-real-data)
+- [Tests and benchmarks](#tests-and-benchmarks)
+- [Project status](#project-status)
+
+## Demo UI
+
+Open the service root (`/`) to reach the web demo. It runs the first example as soon as it loads.
+
+- **Conversation builder:** add customer and agent messages (up to 8), edit them in place, or
+  start from a one-click example.
+- **Decision:** a verdict ("Safe to handle automatically" or "Send to a human agent") with its
+  reason, the intent, the recommended next step, and a confidence gauge marked at the threshold.
+- **How it decided:** a five-step trace showing input screening, intent scores, facts already
+  established in the chat, the actions the policy allows (forbidden actions shown crossed out),
+  and the routing checks that fired.
+- **Developer extras:** the raw JSON response, a ready-to-run `curl` command, a session run
+  history, and light and dark themes. The layout works on phones.
+
+Each example has a direct link of the form `/app/#<id>`. These are the results from the bundled
+demo model:
+
+| Link | Scenario | Intent → action | Routing |
+|---|---|---|---|
+| `#card-start` | Card not working | `card_not_working` → `ask_when_issue_started` | Auto |
+| `#card-progress` | Follow-up after the agent's question | `card_not_working` → `ask_alternate_terminal_attempted` | Auto |
+| `#fx` | Wrong exchange rate, amount given | `card_payment_wrong_exchange_rate` → `explain_exchange_rate_process` | Auto |
+| `#fraud` | Unrecognised card payment | `card_payment_not_recognised` → `secure_account_and_escalate` | Human: policy requires a person |
+| `#hostile` | Prompt injection asking for `execute_refund` | `card_not_working` → `ask_when_issue_started` | Human: suspicious input |
+| `#vague` | "hello, can someone help me?" | `general_support` → `request_clarification` | Human: low confidence |
+
+The step-by-step trace comes from `/demo/explain`, which is only available when
+`OP06_EXPOSE_TRACE=1` is set. Without it, the UI still works and shows only the four-field result.
 
 ## Quick start
 
-The local environment needs Python 3.11 or newer.
+You need Python 3.11 or newer.
 
 ```bash
-make test
-make benchmark-smoke
-make serve
+git clone https://github.com/AmanSingh-tech/Custo.git
+cd Custo
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e '.[dev]'
+
+make test              # unit, contract, integration and security tests
+make serve             # demo model on http://127.0.0.1:8000/
 ```
 
-Then call the service:
+Use `make serve` for the API alone. To get the demo UI with the step-by-step trace, run:
 
 ```bash
-curl -s http://127.0.0.1:8000/triage \
-  -H 'content-type: application/json' \
-  -d '{"conversation":[{"role":"customer","text":"My card is not working."}]}'
+OP06_ALLOW_DEMO_MODEL=1 OP06_EXPOSE_TRACE=1 PYTHONPATH=src \
+  uvicorn op06.api.app:app --port 8000
 ```
 
-For manual testing, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) (redirects to `/app/`).
-The demo UI sends requests to the same `/triage` route used by integrations and benchmark tasks. When
-`OP06_EXPOSE_TRACE=1` is set, it also calls `/demo/explain` to show a step-by-step trace: input
-screening, intent scores, extracted state, policy candidates, and routing reasons. Link to a specific
-example with a hash, e.g. `/app/#hostile` (`card-start`, `card-progress`, `fx`, `fraud`, `hostile`, `vague`).
-
-## Deploy the demo
-
-The container listens on `$PORT` (default `8000`), so it runs unchanged on Render, Railway, Fly.io,
-or Cloud Run.
+You can also use Docker, which runs the same configuration as the hosted demo:
 
 ```bash
-docker compose up --build            # local: http://127.0.0.1:8000/
+docker compose up --build   # http://127.0.0.1:8000/
 ```
 
-**Render (free tier):** push this repository to GitHub, then in Render choose
-*New → Blueprint* and select the repo. `render.yaml` builds the Dockerfile, sets the demo
-environment, and health-checks `/health/ready`. Pushes to `main` redeploy automatically.
+## Deploy
 
-| Variable | Demo value | Purpose |
+The container listens on `$PORT` (default `8000`), so it runs unchanged on Render, Railway,
+Fly.io or Google Cloud Run. The repository includes a Render Blueprint:
+
+1. Push this repository to GitHub.
+2. Sign in to [Render](https://render.com) with GitHub. Choose **New → Blueprint** and select
+   this repository.
+3. Render reads [`render.yaml`](render.yaml), builds the Dockerfile, applies the demo settings,
+   and health-checks `/health/ready`. Your demo URL looks like
+   `https://custo-triage-demo.onrender.com`.
+
+Every push to `main` redeploys. On Render's free plan the service sleeps when idle, so the first
+request after a quiet period takes 30–50 seconds. Open the URL shortly before a live demo.
+
+## API
+
+Interactive API docs are served at `/docs`.
+
+| Method | Path | Purpose |
 |---|---|---|
-| `OP06_ALLOW_DEMO_MODEL` | `1` | Use the embedded keyword model (no trained artifact needed). |
-| `OP06_EXPOSE_TRACE` | `1` | Enable `/demo/explain` for the UI trace. Leave unset in production. |
-| `OP06_CONFIDENCE_THRESHOLD` | `0.58` | Below this calibrated confidence, route to a human. |
+| `POST` | `/triage` | Triage a conversation. `/v1/triage` is an alias. |
+| `POST` | `/demo/explain` | Result plus pipeline trace. Requires `OP06_EXPOSE_TRACE=1`. |
+| `GET` | `/health/live`, `/health/ready`, `/healthz` | Liveness and readiness checks |
+| `GET` | `/version` | Service, API, schema, model and policy versions |
+| `GET` | `/` → `/app/` | Demo UI |
 
-Example response:
+### Request
+
+`/triage` accepts two request shapes, each with one to eight turns. Roles are `customer`, `agent`
+or `action`.
+
+```bash
+# Native shape
+curl -s http://127.0.0.1:8000/triage -H 'content-type: application/json' \
+  -d '{"conversation":[{"role":"customer","text":"My card is not working."}]}'
+
+# Published OP-06 shape: the response echoes the id
+curl -s http://127.0.0.1:8000/triage -H 'content-type: application/json' \
+  -d '{"id":"case-1","context":[{"speaker":"customer","text":"My card is not working."}]}'
+```
+
+### Response
 
 ```json
 {
   "intent": "card_not_working",
   "action": "ask_when_issue_started",
-  "confidence": 0.609,
+  "confidence": 0.6191,
   "needs_human": false
 }
 ```
 
-Health and version endpoints are available at `/health/live`, `/health/ready`, and `/version`.
-`/v1/triage` is provided as a compatibility alias.
+Every response carries `x-request-id`, `x-api-version`, `x-model-version` and `x-policy-version`
+headers.
 
-## Architecture
+### Errors and safe defaults
+
+| Situation | Result |
+|---|---|
+| Malformed request, blank native turn, or more than 8 turns | `422` with `{"error": {"code": "invalid_request", ...}}` |
+| Body larger than `OP06_MAX_REQUEST_BYTES` | `413` |
+| Blank message in the OP-06 shape | `200` with `unknown` / `none`, `needs_human: true` |
+| Hostile input in the OP-06 shape | `200` with `unknown` / `none`, `needs_human: true` |
+
+## How it works
 
 ```text
 validated request
-  -> Unicode-safe normalization and trusted serialization
-  -> intent classifier
-  -> deterministic conversation-state extractor
-  -> versioned policy engine
-  -> policy-masked action ranker
-  -> confidence calibrator
-  -> escalation rules
-  -> four-field API response
+  → Unicode normalisation and injection screening   (bidi, zero-width, fake roles, "ignore instructions")
+  → intent classifier                               (keyword demo model or trained TF-IDF bundle)
+  → conversation-state extractor                    (what the chat has already established)
+  → versioned policy engine                         (allowed next actions for this intent + state)
+  → policy-masked action ranker                     (can only choose an allowed action)
+  → temperature-calibrated confidence
+  → escalation rules                                (decide needs_human)
+  → four-field response
 ```
 
-The runtime cannot execute a refund or mutate a customer account. It only recommends the
-next action. Conversation text is treated as untrusted data, never as policy or instructions.
+A case is sent to a person when any of these apply: confidence is below the threshold, intent or
+action is ambiguous, the policy has no valid path, the chosen action requires a human (for
+example `secure_account_and_escalate`), the input looks hostile or corrupted, or the conversation
+contradicts itself.
 
-## Project map
+Conversation text is always treated as untrusted data, never as instructions. The policy in
+[`src/op06/resources/policy.json`](src/op06/resources/policy.json) is a hard output boundary.
+Actions such as `execute_refund`, `close_customer_account` and `reveal_authentication_secret` are
+globally forbidden and can never be returned.
+
+## Configuration
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `OP06_ALLOW_DEMO_MODEL` | unset | `1` uses the built-in keyword model. Without it, a trained model is required. |
+| `OP06_MODEL_PATH` | unset | Path to a trained `joblib` bundle. |
+| `OP06_POLICY_PATH` | bundled policy | Path to an alternate compiled policy. |
+| `OP06_CONFIDENCE_THRESHOLD` | `0.58` | Confidence below this routes the case to a human. |
+| `OP06_EXPOSE_TRACE` | unset | `1` enables `/demo/explain`. Leave unset in production. |
+| `OP06_MAX_REQUEST_BYTES` | `65536` | Maximum HTTP request size. |
+| `PORT` | `8000` | Container listen port. Set automatically by hosting platforms. |
+
+The service refuses to start with neither a trained model nor the demo flag. It never falls back
+to the demo model silently.
+
+## Project structure
 
 | Location | Purpose |
 |---|---|
-| `src/op06/api/` | FastAPI contract, request limits, health checks, and browser test console. |
-| `src/op06/pipeline.py` | Normalization, classification, state, policy, confidence, and escalation. |
-| `src/op06/policy/` | Versioned policy compilation and action-candidate restrictions. |
-| `src/op06/abcd.py` and `training/` | Public-data import, grouped training, and temperature calibration. |
-| `src/op06/benchmark.py` and `benchmark/` | Smoke cases, paired robustness cases, metrics, gates, and task validation. |
-| `tests/` | Unit, API-contract, integration, and hostile-input regression tests. |
-| `docs/` | Build plan, data format, decisions, raw runs, analysis, and rollout memo. |
+| `src/op06/api/` | FastAPI app: request contract, size limits, health and version routes, trace endpoint. |
+| `src/op06/web/` | Demo UI in plain HTML, CSS and JS with no build step, served at `/app/`. |
+| `src/op06/pipeline.py` | Wires normalisation, classification, state, policy, ranking, calibration and escalation. |
+| `src/op06/preprocessing/` | Unicode normalisation and hostile-input flags. |
+| `src/op06/intent/`, `action/` | Keyword demo classifier, trained-model loaders, policy-masked ranker. |
+| `src/op06/state/` | Rule-based conversation-state extraction. |
+| `src/op06/policy/` | Policy compilation and allowed-action engine. |
+| `src/op06/confidence/` | Temperature calibration and escalation rules. |
+| `src/op06/abcd.py`, `training/` | ABCD dataset import, grouped splits, baseline training and calibration. |
+| `src/op06/benchmark.py`, `benchmark/` | Smoke cases, task packs, metrics and release gates. |
+| `tests/` | Unit, API contract, integration and hostile-input tests. |
+| `docs/` | Build plan, data format, decisions, experiment log, analysis and rollout memo. |
+| `Dockerfile`, `docker-compose.yaml`, `render.yaml` | Container image, local hardened run, and Render deploy. |
 
-## Request contract and safe behavior
+## Training on real data
 
-The service accepts the repository-native shape (`conversation` with `role` and `text`) and the
-published OP-06-compatible shape (`id` plus `context` with `speaker` and `text`). Published-format
-responses echo the supplied `id`. Both forms accept one to eight turns; malformed requests return
-`422`, oversized HTTP bodies return `413`, and a blank published-format message returns a safe
-`unknown` / `none` human-routing response.
-
-A policy conflict, no valid candidate, low confidence, hostile-input flag, or state contradiction
-routes the case to a person. The API is recommendation-only: it has no account credentials, payment
-access, or side-effecting tools, and an action model can rank only policy-permitted candidates.
-
-## Use a trained baseline
-
-Training data uses one JSON object per line:
+Training data uses one JSON object per line. See [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) for
+the full format.
 
 ```json
 {"conversation_id":"c-1","conversation":[{"role":"customer","text":"My card was declined"}],"intent":"card_not_working","action":"ask_when_issue_started"}
 ```
 
-Create leakage-safe conversation-grouped splits and train:
+To train on your own data:
 
 ```bash
-make data-audit DATA=data/examples.jsonl
-make build-splits DATA=data/examples.jsonl
-make train DATA=data/splits/train.jsonl
+make data-audit   DATA=data/examples.jsonl
+make build-splits DATA=data/examples.jsonl        # leakage-safe, grouped by conversation
+make train        DATA=data/splits/train.jsonl
 make serve-trained MODEL=models/baseline.joblib POLICY=policies/compiled/abcd-derived.json
 ```
 
-The policy registry remains a hard output boundary even when a trained artifact is used.
-Update `src/op06/resources/policy.json` after the official label registries and guidelines are
-confirmed.
-
-## Prepare the official ABCD source data
-
-The importer reads ABCD's real `take_action` targets, derives leakage-safe conversation prefixes,
-and writes a policy candidate registry from the train split. Downloaded data is ignored by Git.
+To train on the public ABCD dataset:
 
 ```bash
 make fetch-abcd
-make prepare-abcd
-make train DATA=data/processed/abcd/train.jsonl
-make calibrate DATA=data/processed/abcd/dev.jsonl
+make prepare-abcd                                  # also writes a data-derived policy
+make train      DATA=data/processed/abcd/train.jsonl
+make calibrate  DATA=data/processed/abcd/dev.jsonl
 make build-benchmark DATA=data/processed/abcd/test.jsonl
-make evaluate-trained \
-  MODEL=models/baseline.joblib \
-  POLICY=policies/compiled/abcd-derived.json \
-  DATA=benchmark/cases/abcd-development.jsonl
+make evaluate-trained MODEL=models/baseline.joblib \
+  POLICY=policies/compiled/abcd-derived.json DATA=benchmark/cases/abcd-development.jsonl
 ```
 
-The generated policy is a data-derived action candidate boundary. Review it against ABCD's
-guidelines before treating it as a production policy.
+Downloaded data, models and compiled policies are ignored by Git. Review a generated policy
+against ABCD's guidelines before treating it as a production policy.
 
-## Benchmark
-
-Local benchmark cases are JSONL records containing the API conversation and expected fields.
+## Tests and benchmarks
 
 ```bash
-make benchmark-smoke
-PYTHONPATH=src python -m op06.cli benchmark benchmark/cases --output reports/run.json
+make test                # full pytest suite
+make test-security       # hostile-input regressions only
+make benchmark-validate  # check benchmark task packs
+make benchmark-smoke     # strict smoke cases: every case must match
+ruff check .             # lint, also run in CI
 ```
 
-The report contains intent/action accuracy, macro-F1, ECE, Brier score, failures, and artifact
-versions. The `benchmark/tasks` directories provide the ITSMBench/Harbor-style separation
-between visible instructions, environment description, solution, and verifier expectations.
+Benchmark reports include intent and action accuracy, macro-F1, ECE, Brier score, failure
+counts and artifact versions. CI ([.github/workflows/ci.yaml](.github/workflows/ci.yaml)) runs
+tests, lint, task validation, the smoke benchmark and a container build on every push.
 
-Smoke task packs are strict: every expected result must match. Corpus evaluation is statistical:
-`make evaluate-trained` evaluates release gates across the held-out corpus and prints only a bounded
-sample of failures, while preserving total failure counts in the report.
+## Project status
 
-## Qualification status: do not substitute local metrics
+The local tests, smoke tasks and ABCD-derived benchmark are **development evidence, not
+qualification metrics**. The published OP-06 evaluator files (`train.jsonl.gz`, `dev.jsonl`,
+`dev_noisy.jsonl`, `hostile.jsonl`, `grader.py`) are not included in this repository. When they
+are available:
 
-The repository contains local smoke tasks and an ABCD-derived development benchmark. They are useful
-for regression testing, but they are **not qualification metrics**. The required published evaluator
-assets are absent from this repository:
+1. Keep them out of source control, for example under `data/official/`.
+2. Train only on `train.jsonl.gz`, start the trained service, and run `grader.py` as its own
+   documentation describes.
+3. Record the inputs, the exact command, the service, model and policy versions, the grader output
+   and the load results in [docs/EXPERIMENT_LOG.md](docs/EXPERIMENT_LOG.md).
 
-```text
-train.jsonl.gz
-dev.jsonl
-dev_noisy.jsonl
-hostile.jsonl
-grader.py
-```
-
-When those files are provided, keep them outside source control (for example under
-`data/official/`), train only on `train.jsonl.gz`, start the trained service, and run the supplied
-`grader.py` according to its own documented invocation. Preserve the unedited input files, exact
-command, service/model/policy versions, grader output, and evaluator-machine load result in
-`docs/EXPERIMENT_LOG.md`. Only then report clean and noisy performance, permitted-action violations,
-hostile/human-routing behavior, the official top-70 confidence-error ratio, p95 latency, and cost.
-
-Until that run exists, the correct claim is: **local development evidence passes; official
+Until that run exists, the accurate claim is: **local development evidence passes, and official
 qualification is pending the published files and grader.**
 
-## Review evidence map
-
-| Dimension | Evidence in this repository | Remaining uncertainty |
+| Area | Evidence here | Still open |
 |---|---|---|
-| Service contract | API-contract tests and `/healthz` | Exact grader edge cases are unavailable. |
-| Data provenance | ABCD importer and hashes in the experiment log | Official train/dev files are not present. |
-| Model quality | Reproducible ABCD-derived baseline report | Qualification performance is unknown. |
-| Policy correctness | Candidate mask and invalid-action metric | Official procedure and scorer are pending. |
-| Robustness | Paired smoke/noisy/hostile cases and security tests | Published noise families have not been run. |
-| Confidence and escalation | Calibration, thresholds, and human-route rules | Official top-70 ratio is unverified. |
-| Operations and accountability | Container, CI, load script, decision log, and memo | Evaluator-machine latency/cost are unknown. |
+| Service contract | API contract tests, health routes | Exact grader edge cases |
+| Model quality | Reproducible ABCD-derived baseline | Performance on the official data |
+| Policy correctness | Action mask, invalid-action metric | Official procedure and scorer |
+| Robustness | Clean, noisy and hostile cases; security tests | Published noise families |
+| Confidence | Calibration, threshold, routing rules | Official top-70 confidence-error ratio |
+| Operations | Container, CI, load script, memo | p95 latency and cost on the evaluator machine |
 
-## Configuration
-
-| Variable | Default | Meaning |
-|---|---:|---|
-| `OP06_CONFIDENCE_THRESHOLD` | `0.58` | Human-review threshold |
-| `OP06_MAX_REQUEST_BYTES` | `65536` | Maximum HTTP request size |
-| `OP06_POLICY_PATH` | bundled policy | Alternate compiled policy |
-| `OP06_MODEL_PATH` | unset | Optional trained joblib bundle |
-
-## What remains dataset-dependent
-
-The published OP-06 service contract, hostile pack, and confidence-error-ratio definition are now
-available from the hiring repository, but those evaluator files are not included here. Consequently,
-the included labels and smoke data are executable examples, not a qualification claim. Before
-submission, run the published data and grader, report noisy-slice and human-routing results, and
-measure p95 latency and cost on the evaluator machine.
-
-See `docs/BUILD_PLAN.md` for milestones and `docs/DATA_FORMAT.md` for the canonical data format.
-See [docs/ANALYSIS.md](docs/ANALYSIS.md) for the failure taxonomy and known evidence gaps.
-
-## Submission evidence
-
-The judgment evidence is recorded in [docs/DECISIONS.md](docs/DECISIONS.md), with reconstructed
-raw runs in [docs/EXPERIMENT_LOG.md](docs/EXPERIMENT_LOG.md) and residual-risk ownership and pause
-conditions in [docs/MEMO.md](docs/MEMO.md). These documents distinguish development evidence from
-claims that require the hidden evaluator or official confidence scorer.
+Further reading: [docs/DECISIONS.md](docs/DECISIONS.md) (design decisions),
+[docs/ANALYSIS.md](docs/ANALYSIS.md) (failure taxonomy),
+[docs/MEMO.md](docs/MEMO.md) (residual risk and pause conditions),
+[docs/BUILD_PLAN.md](docs/BUILD_PLAN.md) (milestones), and [SECURITY.md](SECURITY.md).
